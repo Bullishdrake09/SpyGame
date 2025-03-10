@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Spy Game - In Game</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <style>
+    /* Your enhanced black/red theme styles remain here */
+
+    /* Additional styling for modal and toggle switches */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.8);
+    }
+    .modal-content {
+      background-color: #222;
+      margin: 10% auto;
+      padding: 20px;
+      border: 1px solid #c40000;
+      width: 80%;
+      max-width: 500px;
+      border-radius: 8px;
+      position: relative;
+      animation: slideIn 0.5s ease-out;
+      color: #fff;
+    }
+    .close-button {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close-button:hover {
+      color: #fff;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+      margin-left: 10px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ff4444;
+      transition: 0.4s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #fff;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #00cc00;
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    .setting-item {
+      margin: 15px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #openSettings {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: #c40000;
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      z-index: 101;
+    }
+    #openSettings:hover {
+      background-color: #ff0000;
+    }
+    /* Scoreboard styling */
+    #scoreboard {
+      margin: 15px 0;
+      padding: 10px;
+      background: #1a1a1a;
+      border: 1px solid #c40000;
+      border-radius: 6px;
+      color: #fff;
+    }
+    #scoreboard h3 {
+      margin-bottom: 10px;
+    }
+    /* Turn-based description styling */
+    #waiting-message {
+      margin: 15px 0;
+      text-align: center;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+    #submitted-descriptions {
+      margin-top: 20px;
+      padding: 10px;
+      background: #1a1a1a;
+      border: 1px solid #c40000;
+      border-radius: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    #submitted-descriptions p {
+      margin: 5px 0;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <button id="openSettings">Settings</button>
+  <div class="container">
+    <h1>Spy Game</h1>
+    <p>Lobby: {{ lobby_code }} | Nickname: {{ nickname }}</p>
+    
+    <!-- Scoreboard -->
+    <div id="scoreboard">
+      <h3>Scoreboard</h3>
+    </div>
+    
+    <div id="assignment">
+      <h2>Your Assignment</h2>
+      <p id="wordDisplay">Waiting for assignment...</p>
+    </div>
+    
+    <!-- Turn-based description section -->
+    <div id="description-section">
+      <h2>Enter your description</h2>
+      <textarea id="description-input" placeholder="Enter description here..."></textarea><br>
+      <button id="submit-description">Submit Description</button>
+      <p id="waiting-message"></p>
+    </div>
+    
+    <!-- Submitted descriptions (visible to all) -->
+    <div id="submitted-descriptions">
+      <h3>Submitted Descriptions</h3>
+    </div>
+    
+    <div id="voting-section" style="display: none;">
+      <h2>Vote for the Spy</h2>
+      <form id="vote-form">
+        <div id="descriptions-list"></div>
+        <button type="submit">Submit Vote</button>
+      </form>
+    </div>
+    
+    <!-- Host-only controls -->
+    <div id="hostControls">
+      <button id="nextRoundButton">Next Round</button>
+    </div>
+    
+    <div id="message"></div>
+  </div>
+  
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <span class="close-button" id="closeSettings">&times;</span>
+      <h2>Game Settings</h2>
+      <div class="setting-item">
+        <label for="toggleShowRole">See when you are a spy or not:</label>
+        <label class="switch">
+          <input type="checkbox" id="toggleShowRole">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-item">
+        <label for="toggleDeadVote">Dead players can vote:</label>
+        <label class="switch">
+          <input type="checkbox" id="toggleDeadVote">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-item">
+        <label for="toggleAnimations">Enable animations:</label>
+        <label class="switch">
+          <input type="checkbox" id="toggleAnimations">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="setting-item">
+        <label for="toggleSound">Enable sound effects:</label>
+        <label class="switch">
+          <input type="checkbox" id="toggleSound">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <button id="saveSettings">Save Settings</button>
+    </div>
+  </div>
+  
+  <script>
+    var isHost = {{ 'true' if is_host else 'false' }};
+    var myNick = "{{ nickname }}";
+    var currentDescriber = "";
+    var socket = io();
+    
+    // Global client settings (defaults; will be updated by server)
+    var clientSettings = {
+      show_role: false,
+      dead_vote: false,
+      animations: true,
+      sound: true
+    };
+
+    socket.on('connect', function() {
+      socket.emit('join_lobby');
+    });
+    
+    socket.on('update_players', function(data) {
+      var scoreboard = document.getElementById('scoreboard');
+      scoreboard.innerHTML = "<h3>Scoreboard</h3>";
+      data.players.forEach(function(player) {
+        scoreboard.innerHTML += "<p>" + player.nickname + ": " + player.points + " pts</p>";
+      });
+    });
+    
+    socket.on('settings_updated', function(data) {
+      clientSettings = data.settings;
+      document.getElementById('toggleShowRole').checked = clientSettings.show_role;
+      document.getElementById('toggleDeadVote').checked = clientSettings.dead_vote;
+      document.getElementById('toggleAnimations').checked = clientSettings.animations;
+      document.getElementById('toggleSound').checked = clientSettings.sound;
+    });
+    
+    socket.on('word_assignment', function(data) {
+      if(clientSettings.show_role) {
+        document.getElementById('wordDisplay').innerText = "Word: " + data.word + " (Role: " + data.role + ")";
+      } else {
+        document.getElementById('wordDisplay').innerText = "Word: " + data.word;
+      }
+    });
+    
+    socket.on('next_describer', function(data) {
+      currentDescriber = data.describer;
+      if(myNick === currentDescriber) {
+        document.getElementById('description-section').style.display = 'block';
+        document.getElementById('waiting-message').innerText = "It's your turn to describe.";
+      } else {
+        document.getElementById('description-section').style.display = 'none';
+        document.getElementById('waiting-message').innerText = "Waiting for " + currentDescriber + " to describe.";
+      }
+    });
+    
+    socket.on('description_submitted', function(data) {
+      var div = document.getElementById('submitted-descriptions');
+      var para = document.createElement('p');
+      para.innerText = data.nickname + ": " + data.description;
+      div.appendChild(para);
+    });
+    
+    document.getElementById('submit-description').addEventListener('click', function() {
+      var description = document.getElementById('description-input').value.trim();
+      if(description === "") {
+        alert("Please enter a description.");
+        return;
+      }
+      socket.emit('submit_description', { description: description });
+      document.getElementById('description-input').value = "";
+    });
+    
+    socket.on('all_descriptions', function(data) {
+      document.getElementById('voting-section').style.display = 'block';
+      var listDiv = document.getElementById('descriptions-list');
+      listDiv.innerHTML = "";
+      data.descriptions.forEach(function(item, index) {
+        var radio = document.createElement('input');
+        radio.type = "radio";
+        radio.name = "vote";
+        radio.value = item.nickname;
+        radio.id = "vote_" + index;
+        
+        var label = document.createElement('label');
+        label.htmlFor = "vote_" + index;
+        label.innerText = item.nickname + ": " + item.description;
+        
+        listDiv.appendChild(radio);
+        listDiv.appendChild(label);
+        listDiv.appendChild(document.createElement('br'));
+      });
+      document.getElementById('message').innerText = "";
+    });
+    
+    document.getElementById('vote-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var selected = document.querySelector('input[name="vote"]:checked');
+      if(!selected) {
+        alert("Please select a player to vote for.");
+        return;
+      }
+      socket.emit('submit_vote', { vote: selected.value });
+      document.getElementById('voting-section').style.display = 'none';
+      document.getElementById('message').innerText = "Vote submitted. Waiting for results...";
+    });
+    
+    socket.on('player_eliminated', function(data) {
+      document.getElementById('message').innerText = data.nickname + " was eliminated! (Role: " + data.role + ")";
+    });
+    
+    socket.on('round_over', function(data) {
+      document.getElementById('message').innerText = data.message;
+      if(isHost) {
+        document.getElementById('hostControls').style.display = 'block';
+      }
+    });
+    
+    socket.on('new_round', function(data) {
+      document.getElementById('message').innerText = data.message;
+      document.getElementById('voting-section').style.display = 'none';
+      document.getElementById('hostControls').style.display = 'none';
+      document.getElementById('submitted-descriptions').innerHTML = "<h3>Submitted Descriptions</h3>";
+    });
+    
+    socket.on('vote_failed', function(data) {
+      document.getElementById('message').innerText = data.message;
+    });
+    
+    socket.on('error', function(data) {
+      alert(data.message);
+    });
+    
+    var settingsModal = document.getElementById("settingsModal");
+    var openSettingsBtn = document.getElementById("openSettings");
+    var closeSettingsBtn = document.getElementById("closeSettings");
+    
+    openSettingsBtn.onclick = function() {
+      settingsModal.style.display = "block";
+    }
+    closeSettingsBtn.onclick = function() {
+      settingsModal.style.display = "none";
+    }
+    window.onclick = function(event) {
+      if(event.target == settingsModal) {
+        settingsModal.style.display = "none";
+      }
+    }
+    
+    if(!isHost) {
+      document.getElementById('toggleShowRole').disabled = true;
+      document.getElementById('toggleDeadVote').disabled = true;
+      document.getElementById('toggleAnimations').disabled = true;
+      document.getElementById('toggleSound').disabled = true;
+      document.getElementById('saveSettings').disabled = true;
+    }
+    
+    document.getElementById('saveSettings').addEventListener('click', function() {
+      var newSettings = {
+        show_role: document.getElementById('toggleShowRole').checked,
+        dead_vote: document.getElementById('toggleDeadVote').checked,
+        animations: document.getElementById('toggleAnimations').checked,
+        sound: document.getElementById('toggleSound').checked
+      };
+      clientSettings = newSettings;
+      if(isHost) {
+        socket.emit('update_settings', newSettings);
+      }
+      settingsModal.style.display = "none";
+    });
+    
+    document.getElementById('nextRoundButton').addEventListener('click', function() {
+      socket.emit('next_round');
+      document.getElementById('hostControls').style.display = 'none';
+    });
+  </script>
+</body>
+</html>

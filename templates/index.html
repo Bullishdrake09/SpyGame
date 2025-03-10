@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Spy Game - Home</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome to the Spy Game!</h1>
+    <div class="form-container">
+      <h2>Host a Game</h2>
+      <form action="/create" method="POST">
+        <input type="text" name="nickname" placeholder="Enter nickname" required>
+        <button type="submit">Host Game</button>
+      </form>
+    </div>
+    <hr>
+    <div class="form-container">
+      <h2>Join a Game</h2>
+      <form action="/join" method="POST">
+        <input type="text" name="nickname" placeholder="Enter nickname" required>
+        <input type="text" name="lobby_code" placeholder="Enter lobby code" required>
+        <button type="submit">Join Game</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

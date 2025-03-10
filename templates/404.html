@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>404 - Page Not Found</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .error-container {
+      text-align: center;
+      padding: 50px;
+    }
+    .error-code {
+      font-size: 8rem;
+      color: #c40000;
+    }
+    .error-message {
+      font-size: 2rem;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container error-container">
+    <div class="error-code">404</div>
+    <div class="error-message">Page Not Found</div>
+  </div>
+</body>
+</html>

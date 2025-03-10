@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Lobby - {{ lobby_code }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <!-- Updated Socket.IO client library -->
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script>
+    // Set JS variables for host status and current user's nickname.
+    var isHost = {{ 'true' if is_host else 'false' }};
+    var myNick = "{{ nickname }}";
+    
+    var socket = io();
+    socket.on('connect', function() {
+      socket.emit('join_lobby');
+    });
+
+    socket.on('update_players', function(data) {
+      var list = document.getElementById('playerList');
+      list.innerHTML = '';
+      data.players.forEach(function(player) {
+        var li = document.createElement('li');
+        li.innerText = player.nickname;
+        // If current user is host and this player is not the host, add Kick button.
+        if(isHost && player.nickname !== myNick) {
+          var kickBtn = document.createElement('button');
+          kickBtn.innerText = "Kick";
+          kickBtn.className = "kick-btn";
+          kickBtn.onclick = function() {
+            socket.emit('kick_player', { sid: player.sid });
+          };
+          li.appendChild(kickBtn);
+        }
+        list.appendChild(li);
+      });
+    });
+
+    socket.on('game_started', function(data) {
+      window.location.href = "/game";
+    });
+
+    socket.on('error', function(data) {
+      alert(data.message);
+    });
+
+    socket.on('kicked', function(data) {
+      alert(data.message);
+      window.location.href = "/";
+    });
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h1>Lobby Code: {{ lobby_code }}</h1>
+    <p>Nickname: {{ nickname }}</p>
+    <h3>Players:</h3>
+    <ul id="playerList"></ul>
+    {% if is_host %}
+      <button onclick="socket.emit('start_game')">Start Game</button>
+    {% endif %}
+  </div>
+</body>
+</html>

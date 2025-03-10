@@ -1,0 +1,186 @@
+word_pairs = [
+    ('moped', 'bicycle'),        # Vehicles
+    ('milk', 'coffee'),          # Beverages
+    ('peach', 'pear'),           # Fruits
+    ('guinea pig', 'parrot'),    # Pets
+    ('eraser', 'chalk'),         # Writing instruments
+    ('sweater', 'scarf'),        # Clothing
+    ('newspaper', 'novel'),      # Reading materials
+    ('couch', 'bookshelf'),      # Furniture
+    ('oregano', 'basil'),        # Seasonings
+    ('asteroid', 'comet'),       # Celestial bodies
+    ('plateau', 'mountain'),     # Landforms
+    ('swamp', 'bayou'),          # Water bodies
+    ('spork', 'tongs'),          # Cutlery
+    ('saxophone', 'clarinet'),   # Musical instruments
+    ('helicopter', 'airplane'),  # Public transport
+    ('autumn', 'summer'),        # Seasons
+    ('sweet potato', 'yam'),     # Starches
+    ('sunflower', 'violet'),     # Flowers
+    ('surgeon', 'paramedic'),    # Healthcare professionals
+    ('cook', 'waitstaff'),       # Restaurant staff
+    ('son', 'daughter'),         # Family
+    ('colleague', 'boss'),       # Relationships
+    ('coal', 'solar'),           # Energy sources
+    ('desktop', 'smartphone'),   # Electronics
+    ('picnic', 'barbecue'),      # Outdoor spaces
+    ('staircase', 'balcony'),    # Building parts
+    ('honeydew', 'watermelon'),  # Basic foods
+    ('mansion', 'estate'),       # Grand buildings
+    ('skateboard', 'bike'),      # Two-wheeled vehicles
+    ('jaguar', 'leopard'),       # Big cats
+    ('platinum', 'diamond'),     # Precious metals
+    ('drizzle', 'hail'),         # Precipitation
+    ('knight', 'warrior'),       # Warriors
+    ('nurse', 'teacher'),        # Professions
+    ('jungle', 'tundra'),        # Large natural areas
+    ('raincloud', 'clear sky'),  # Atmospheric elements
+    ('academy', 'university'),   # Educational institutions
+    ('tablet', 'phone'),         # Communication devices
+    ('molasses', 'honey'),       # Sweeteners
+    ('cucumber', 'carrot'),      # Vegetables
+    ('rugby', 'football'),       # Sports
+    ('short story', 'poetry'),   # Literary forms
+    ('headphones', 'microphone'),# Recording devices
+    ('cargo ship', 'yacht'),     # Watercraft
+    ('suburbs', 'downtown'),     # Urban vs. rural areas
+    ('opals', 'diamonds'),       # Gemstones
+    ('hero', 'anti-hero'),       # Story roles
+    ('tequila', 'rum'),          # Alcoholic beverages
+    ('climbing', 'mountaineering'),# Outdoor activities
+    ('keyboard', 'monitor'),     # Computer peripherals
+    ('whale', 'shark'),          # Large animals
+    ('tulip', 'orchid'),         # Types of flowers
+    ('volcano', 'mountain'),     # Elevated landforms
+    ('butter', 'cream'),         # Flavors
+    ('spinach', 'lettuce'),      # Vegetables
+    ('diary', 'journal'),        # Writing materials
+    ('jigsaw', 'crossword'),     # Brain challenges
+    ('fall', 'autumn'),          # Seasons
+    ('croissant', 'muffin'),     # Baked goods
+    ('satellite', 'compass'),    # Navigation tools
+    ('train', 'tram'),           # Urban transport
+    ('workshop', 'seminar'),     # Educational events
+    ('cruise', 'resort'),        # Vacation spots
+    ('director', 'actor'),       # Film industry roles
+    ('present', 'past'),         # Time periods
+    ('draftsman', 'engineer'),   # Technical professions
+    ('comics', 'anime'),         # Illustrated stories
+    ('desert', 'prairie'),       # Dense woodland
+    ('stream', 'creek'),         # Flowing water bodies
+    ('counter', 'desk'),         # Furniture
+    ('gelato', 'ice cream cone'), # Frozen desserts
+    ('fortress', 'bunker'),      # Defensive structures
+    ('memoir', 'biography'),     # Literary categories
+    ('sunshine', 'rainbow'),     # Weather phenomena
+    ('piano', 'synthesizer'),    # Musical instruments
+    ('wood', 'stone'),           # Sculpting materials
+    ('mentor', 'counselor'),     # Support roles
+    ('hurricane', 'cyclone'),    # Natural disasters
+    ('magazine', 'brochure'),    # Print media
+    ('art', 'math'),             # Academic subjects
+    ('kitten', 'puppy'),         # Baby animals
+    ('earth', 'fire'),           # Elements of nature
+    ('demon', 'vampire'),        # Supernatural beings
+    ('spy', 'agent'),            # Investigation roles
+    ('freedom', 'liberty'),      # Abstract concepts
+    ('screenwriter', 'producer'),# Film-making roles
+    ('gatherer', 'fisherman'),   # Early human roles
+    ('skateboard', 'scooter'),   # Recreational transport
+    ('yoga', 'crossfit'),        # Fitness activities
+    ('wrap', 'burger'),          # Meal types
+    ('ensemble', 'orchestra'),   # Musical groups
+    ('swamp', 'marsh'),          # Diverse ecosystems
+    ('window', 'frame'),         # Reflective surfaces
+    ('blues', 'classical'),      # Music genres
+    ('zoologist', 'botanist'),   # Scientific professions
+    ('melon', 'cantaloupe'),     # Fruits
+    ('moped', 'bike'),           # Vehicles
+    ('espresso', 'latte'),       # Beverages
+    ('watermelon', 'melon'),     # Fruits
+    ('lizard', 'turtle'),        # Pets
+    ('pencil', 'charcoal'),      # Writing instruments
+    ('suit', 'tie'),             # Clothing
+    ('magazine', 'book'),        # Reading materials
+    ('armchair', 'beanbag'),     # Furniture
+    ('oregano', 'garlic'),       # Seasonings
+    ('comet', 'nebula'),         # Celestial bodies
+    ('canyon', 'valley'),        # Landforms
+    ('ocean', 'sea'),            # Water bodies
+    ('knife', 'spoon'),          # Cutlery
+    ('ukulele', 'accordion'),    # Musical instruments
+    ('train', 'metro'),          # Public transport
+    ('season', 'holiday'),       # Seasons
+    ('rice', 'noodles'),         # Starches
+    ('sunflower', 'lilac'),      # Flowers
+    ('doctor', 'dentist'),       # Healthcare professionals
+    ('chef', 'barista'),         # Restaurant staff
+    ('cousin', 'aunt'),          # Family
+    ('manager', 'employee'),     # Relationships
+    ('coal', 'wind power'),      # Energy sources
+    ('camera', 'smartphone'),    # Electronics
+    ('festival', 'picnic'),      # Outdoor spaces
+    ('balcony', 'window'),       # Building parts
+    ('cheese', 'meat'),          # Basic foods
+    ('castle', 'fort'),          # Grand buildings
+    ('cycle', 'motorbike'),      # Two-wheeled vehicles
+    ('caracal', 'serval'),       # Big cats
+    ('brass', 'gold'),           # Precious metals
+    ('rain', 'fog'),             # Precipitation
+    ('gladiator', 'viking'),     # Warriors
+    ('nurse', 'counselor'),      # Professions
+    ('wilderness', 'jungle'),    # Large natural areas
+    ('wind', 'cloud'),           # Atmospheric elements
+    ('school', 'academy'),       # Educational institutions
+    ('smartwatch', 'laptop'),    # Communication devices
+    ('molasses', 'syrup'),       # Sweeteners
+    ('spinach', 'tomato'),       # Vegetables
+    ('football', 'baseball'),    # Sports
+    ('novella', 'poem'),         # Literary forms
+    ('microphone', 'camera'),    # Recording devices
+    ('boat', 'cruise ship'),     # Watercraft
+    ('city', 'town'),            # Urban vs. rural areas
+    ('topaz', 'emerald'),        # Gemstones
+    ('comic', 'novel'),          # Story roles
+    ('beer', 'whiskey'),         # Alcoholic beverages
+    ('biking', 'running'),       # Outdoor activities
+    ('trackpad', 'keyboard'),    # Computer peripherals
+    ('elephant', 'rhino'),       # Large animals
+    ('daisy', 'iris'),           # Types of flowers
+    ('hill', 'mountain'),        # Elevated landforms
+    ('sour', 'spicy'),           # Flavors
+    ('carrot', 'beetroot'),      # Vegetables
+    ('pen', 'pencil'),           # Writing materials
+    ('maze', 'puzzle'),          # Brain challenges
+    ('spring', 'fall'),          # Seasons
+    ('bagel', 'croissant'),      # Baked goods
+    ('compass', 'map'),          # Navigation tools
+    ('bus', 'train'),            # Urban transport
+    ('seminar', 'conference'),   # Educational events
+    ('beach', 'resort'),         # Vacation spots
+    ('director', 'actor'),       # Film industry roles
+    ('future', 'past'),          # Time periods
+    ('architect', 'designer'),   # Technical professions
+    ('manga', 'graphic novel'),  # Illustrated stories
+    ('forest', 'forest'),        # Dense woodland
+    ('river', 'brook'),          # Flowing water bodies
+    ('bookshelf', 'sofa'),       # Furniture
+    ('ice cream', 'sorbet'),     # Frozen desserts
+    ('castle', 'manor'),         # Defensive structures
+    ('fiction', 'non-fiction'),  # Literary categories
+    ('rainbow', 'cloud'),        # Weather phenomena
+    ('drum', 'guitar'),          # Musical instruments
+    ('clay', 'plaster'),         # Sculpting materials
+    ('coach', 'trainer'),        # Support roles
+    ('earthquake', 'flood'),     # Natural disasters
+    ('journal', 'newspaper'),    # Print media
+    ('science', 'history'),      # Academic subjects
+    ('kitten', 'puppy'),         # Baby animals
+    ('air', 'water'),            # Elements of nature
+    ('ghost', 'vampire'),        # Supernatural beings
+    ('spy', 'investigator'),     # Investigation roles
+    ('justice', 'peace'),        # Abstract concepts
+    ('director', 'actor'),       # Film-making roles
+    ('hunter', 'gatherer'),      # Early human roles
+    ('rollerblades', 'skateboard') # Recreational transport
+]
