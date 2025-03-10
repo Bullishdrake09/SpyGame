@@ -328,5 +328,5 @@ def handle_update_settings(data):
     emit('settings_updated', {'settings': lobby['settings']}, room=lobby_code)
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=False)
+    socketio.run(app, debug=False, allow_unsafe_werkzeug=True)
 
