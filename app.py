@@ -22,239 +22,11 @@ socketio = SocketIO(app, async_mode='threading')
 lobbies = {}
 
 # Hardcoded word pairs (first word for normal players, second for spy).
-word_pairs = [# Same-Category Pairs (160 lines):
-
-# Vehicles (15)
-('motorcycle', 'bicycle'),
-('bus', 'tram'),
-('taxi', 'van'),
-('truck', 'pickup'),
-('helicopter', 'jet'),
-('scooter', 'minivan'),
-('boat', 'ferry'),
-('submarine', 'sailboat'),
-('convertible', 'coupe'),
-('roadster', 'limousine'),
-('SUV', 'tractor'),
-('blimp', 'airship'),
-('dune buggy', 'racer'),
-('segway', 'go-kart'),
-('rickshaw', 'tricycle'),
-
-# Beverages (15)
-('espresso', 'cappuccino'),
-('latte', 'mocha'),
-('smoothie', 'milkshake'),
-('lemonade', 'iced tea'),
-('beer', 'wine'),
-('soda', 'juice'),
-('water', 'sparkling water'),
-('cocktail', 'margarita'),
-('whiskey', 'vodka'),
-('iced coffee', 'affogato'),
-('frappuccino', 'macchiato'),
-('hot chocolate', 'chai'),
-('kombucha', 'ginger beer'),
-('cider', 'mead'),
-('matcha', 'oolong'),
-
-# Fruits (15)
-('banana', 'apple'),
-('mango', 'papaya'),
-('strawberry', 'blueberry'),
-('pear', 'peach'),
-('grape', 'cherry'),
-('watermelon', 'cantaloupe'),
-('kiwi', 'lime'),
-('pineapple', 'coconut'),
-('apricot', 'plum'),
-('raspberry', 'blackberry'),
-('pomegranate', 'cranberry'),
-('mandarin', 'tangerine'),
-('fig', 'date'),
-('guava', 'lychee'),
-('dragonfruit', 'passionfruit'),
-
-# Colors (15)
-('red', 'blue'),
-('green', 'yellow'),
-('purple', 'pink'),
-('black', 'white'),
-('brown', 'beige'),
-('gray', 'silver'),
-('violet', 'indigo'),
-('magenta', 'cyan'),
-('turquoise', 'teal'),
-('maroon', 'burgundy'),
-('olive', 'lime'),
-('navy', 'sky blue'),
-('scarlet', 'crimson'),
-('amber', 'gold'),
-('emerald', 'jade'),
-
-# Animals (15)
-('cat', 'dog'),
-('lion', 'tiger'),
-('elephant', 'rhinoceros'),
-('giraffe', 'zebra'),
-('bear', 'wolf'),
-('fox', 'coyote'),
-('rabbit', 'squirrel'),
-('horse', 'donkey'),
-('monkey', 'ape'),
-('panda', 'koala'),
-('kangaroo', 'wallaby'),
-('dolphin', 'whale'),
-('shark', 'stingray'),
-('penguin', 'seal'),
-('crocodile', 'alligator'),
-
-# Countries (10)
-('USA', 'Canada'),
-('UK', 'France'),
-('Germany', 'Italy'),
-('Spain', 'Portugal'),
-('China', 'Japan'),
-('Brazil', 'Argentina'),
-('India', 'Pakistan'),
-('Russia', 'Ukraine'),
-('Australia', 'New Zealand'),
-('Egypt', 'South Africa'),
-
-# Sports (10)
-('soccer', 'basketball'),
-('tennis', 'badminton'),
-('baseball', 'football'),
-('cricket', 'rugby'),
-('golf', 'cycling'),
-('hockey', 'volleyball'),
-('swimming', 'diving'),
-('boxing', 'wrestling'),
-('skiing', 'snowboarding'),
-('skating', 'rollerblading'),
-
-# Musical Instruments (10)
-('guitar', 'bass'),
-('piano', 'organ'),
-('drums', 'cymbals'),
-('violin', 'cello'),
-('flute', 'clarinet'),
-('saxophone', 'trumpet'),
-('harp', 'mandolin'),
-('banjo', 'ukulele'),
-('harmonica', 'accordion'),
-('synthesizer', 'keyboard'),
-
-# Clothing (10)
-('shirt', 'pants'),
-('jacket', 'coat'),
-('dress', 'skirt'),
-('hat', 'scarf'),
-('gloves', 'socks'),
-('shoes', 'boots'),
-('tie', 'belt'),
-('sweater', 'hoodie'),
-('shorts', 'leggings'),
-('suit', 'blazer'),
-
-# Professions (10)
-('doctor', 'nurse'),
-('teacher', 'professor'),
-('engineer', 'architect'),
-('lawyer', 'judge'),
-('chef', 'baker'),
-('pilot', 'flight attendant'),
-('artist', 'designer'),
-('writer', 'poet'),
-('musician', 'composer'),
-('scientist', 'researcher'),
-
-# Technology (10)
-('computer', 'laptop'),
-('smartphone', 'tablet'),
-('printer', 'scanner'),
-('router', 'modem'),
-('keyboard', 'mouse'),
-('monitor', 'television'),
-('camera', 'drone'),
-('headphones', 'speaker'),
-('smartwatch', 'fitness tracker'),
-('microphone', 'amplifier'),
-
-# Flowers (10)
-('rose', 'lily'),
-('daisy', 'tulip'),
-('orchid', 'sunflower'),
-('daffodil', 'marigold'),
-('violet', 'peony'),
-('carnation', 'gerbera'),
-('hyacinth', 'iris'),
-('poppy', 'anemone'),
-('zinnia', 'cosmos'),
-('chrysanthemum', 'freesia'),
-
-# Trees (10)
-('oak', 'maple'),
-('pine', 'cedar'),
-('birch', 'spruce'),
-('willow', 'poplar'),
-('sequoia', 'redwood'),
-('cherry', 'apple tree'),
-('ash', 'elm'),
-('fir', 'larch'),
-('sycamore', 'baobab'),
-('cypress', 'magnolia'),
-
-# Foods (5)
-('bread', 'butter'),
-('cheese', 'yogurt'),
-('pasta', 'rice'),
-('soup', 'salad'),
-('steak', 'egg'),
-
-# Completely Mismatching Pairs (20 lines):
-('cat', 'laptop'),
-('apple', 'hammer'),
-('soccer', 'piano'),
-('tree', 'phone'),
-('shirt', 'giraffe'),
-('river', 'clock'),
-('coffee', 'engineer'),
-('sunflower', 'airplane'),
-('ocean', 'keyboard'),
-('mountain', 'burger'),
-('rain', 'suitcase'),
-('ice', 'violin'),
-('candle', 'soccer'),
-('jacket', 'rocket'),
-('island', 'toothbrush'),
-('desert', 'microphone'),
-('butterfly', 'printer'),
-('coffee', 'telescope'),
-('lizard', 'sandwich'),
-('bicycle', 'novel'),
-
-# Not-So-Close Related Pairs (20 lines):
-('coffee', 'morning'),
-('book', 'lamp'),
-('rain', 'window'),
-('music', 'memory'),
-('shadow', 'time'),
-('smile', 'sunset'),
-('fire', 'desire'),
-('ocean', 'echo'),
-('forest', 'whisper'),
-('mountain', 'silence'),
-('river', 'journey'),
-('storm', 'canvas'),
-('breeze', 'secret'),
-('mirror', 'dream'),
-('desert', 'mystery'),
-('clock', 'memory'),
-('flame', 'passion'),
-('window', 'perspective'),
-('pen', 'thought'),
-('silence', 'harmony'),
+word_pairs = [
+    ('car', 'airplane'),
+    ('coffee', 'tea'),
+    ('apple', 'orange'),
+    # Add more pairs as desired.
 ]
 
 def generate_lobby_code(length=4):
@@ -323,7 +95,6 @@ def game():
                            nickname=session.get('nickname'), 
                            is_host=(session.get('role')=='host'))
 
-# Custom 404 error page.
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template("404.html"), 404
@@ -429,8 +200,9 @@ def handle_submit_description(data):
     lobby = lobbies.get(lobby_code)
     if not lobby or lobby['state'] != 'game':
         return
+    # Only accept description if it's this player's turn.
     if lobby['description_order'][lobby['current_descr_index']] != nickname:
-        return  # Ignore submissions out of turn.
+        return
     lobby['descriptions'][nickname] = description
     emit('description_submitted', {'nickname': nickname, 'description': description}, room=lobby_code)
     lobby['current_descr_index'] += 1
@@ -446,7 +218,7 @@ def handle_submit_description(data):
 def handle_submit_vote(data):
     lobby_code = session.get('lobby')
     nickname = session.get('nickname')
-    vote_target = data.get('vote')
+    vote_target = data.get('vote')  # Target player's nickname.
     lobby = lobbies.get(lobby_code)
     if not lobby or lobby['state'] != 'game':
         return
@@ -475,8 +247,6 @@ def handle_submit_vote(data):
         normals = sum(1 for assign in alive_assignments if assign['role'] == 'normal')
         pair = lobby['current_word_pair']
         
-        # Points system: if the spy is discovered, normal players get 3 points;
-        # if the spy wins, the spy gets 1 point per player.
         if eliminated_role == 'spy':
             for sid, player in lobby['players'].items():
                 nick = player['nickname']
@@ -500,8 +270,14 @@ def handle_submit_vote(data):
         else:
             outcome_message = f"{eliminated_name} was not the spy. Continue the round."
             emit('vote_failed', {'message': outcome_message}, room=lobby_code)
+            # Reset description phase for all alive players.
+            alive_players = [player['nickname'] for sid, player in lobby['players'].items() if player['alive']]
+            random.shuffle(alive_players)
+            lobby['description_order'] = alive_players
+            lobby['current_descr_index'] = 0
             lobby['descriptions'] = {}
             lobby['votes'] = {}
+            emit('next_describer', {'describer': alive_players[0]}, room=lobby_code)
 
 @socketio.on('next_round')
 def handle_next_round():
@@ -557,4 +333,3 @@ def handle_update_settings(data):
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', debug=False, allow_unsafe_werkzeug=True)
-
