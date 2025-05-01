@@ -22,7 +22,7 @@ socketio = SocketIO(app, async_mode='threading')
 lobbies = {}
 
 # Hardcoded word pairs (first word for normal players, second for spy).
-combined_word_pairs = [
+word_pairs = [
     # ---------------------------
     # Original List
     # ---------------------------
