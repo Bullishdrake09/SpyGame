@@ -2,7 +2,7 @@
 <html>
 <head>
   <title>Spy Game - In Game</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" id="theme-stylesheet">
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
   <style>
     /* Your enhanced black/red theme styles remain here */
@@ -135,7 +135,7 @@
       margin: 5px 0;
       color: #fff;
     }
-  </style>
+  </style>	
 </head>
 <body>
   <button id="openSettings">Settings</button>
@@ -215,6 +215,13 @@
           <span class="slider"></span>
         </label>
       </div>
+      <div class="setting-item">
+        <label>Theme:</label>
+        <div class="theme-buttons">
+          <button id="defaultTheme" class="theme-button active">Default</button>
+          <button id="purpleTheme" class="theme-button">Purple</button>
+        </div>
+      </div>
       <button id="saveSettings">Save Settings</button>
     </div>
   </div>
@@ -230,7 +237,8 @@
       show_role: false,
       dead_vote: false,
       animations: true,
-      sound: true
+      sound: true,
+      theme: 'style.css'
     };
 
     socket.on('connect', function() {
@@ -365,12 +373,52 @@
       }
     }
     
+    // Theme button functionality
+    document.getElementById('defaultTheme').addEventListener('click', function() {
+      setTheme('style.css');
+      updateActiveThemeButton('defaultTheme');
+    });
+
+    document.getElementById('purpleTheme').addEventListener('click', function() {
+      setTheme('purple.css');
+      updateActiveThemeButton('purpleTheme');
+    });
+
+    function setTheme(cssFile) {
+      // Get the existing stylesheet link
+      let link = document.getElementById('theme-stylesheet');
+      // Update the href to the new CSS file
+      link.href = "{{ url_for('static', filename='css/') }}" + cssFile;
+      // Save the preference to localStorage
+      localStorage.setItem('preferredTheme', cssFile);
+      clientSettings.theme = cssFile;
+    }
+
+    function updateActiveThemeButton(activeId) {
+      // Remove active class from all theme buttons
+      document.querySelectorAll('.theme-button').forEach(button => {
+        button.classList.remove('active');
+      });
+      // Add active class to the selected button
+      document.getElementById(activeId).classList.add('active');
+    }
+
+    // Apply saved theme when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      const savedTheme = localStorage.getItem('preferredTheme');
+      if (savedTheme) {
+        setTheme(savedTheme);
+        updateActiveThemeButton(savedTheme === 'purple.css' ? 'purpleTheme' : 'defaultTheme');
+      }
+    });
+    
     if(!isHost) {
       document.getElementById('toggleShowRole').disabled = true;
       document.getElementById('toggleDeadVote').disabled = true;
       document.getElementById('toggleAnimations').disabled = true;
       document.getElementById('toggleSound').disabled = true;
       document.getElementById('saveSettings').disabled = true;
+      // Note: Theme selection is still enabled for all users
     }
     
     document.getElementById('saveSettings').addEventListener('click', function() {
@@ -378,7 +426,8 @@
         show_role: document.getElementById('toggleShowRole').checked,
         dead_vote: document.getElementById('toggleDeadVote').checked,
         animations: document.getElementById('toggleAnimations').checked,
-        sound: document.getElementById('toggleSound').checked
+        sound: document.getElementById('toggleSound').checked,
+        theme: clientSettings.theme
       };
       clientSettings = newSettings;
       if(isHost) {
