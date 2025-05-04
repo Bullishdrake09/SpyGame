@@ -2,11 +2,18 @@
 <html>
 <head>
   <title>Spy Game - Home</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" id="theme-stylesheet">
 </head>
 <body>
   <div class="container">
     <h1>Welcome to the Spy Game!</h1>
+    
+    <div class="theme-selector">
+      <span>Theme:</span>
+      <button id="defaultTheme" class="theme-button active">Default</button>
+      <button id="purpleTheme" class="theme-button">Purple</button>
+    </div>
+    
     <div class="form-container">
       <h2>Host a Game</h2>
       <form action="/create" method="POST">
@@ -24,5 +31,53 @@
       </form>
     </div>
   </div>
+
+  <script>
+    // Theme switching functionality
+    document.getElementById('defaultTheme').addEventListener('click', function() {
+      setTheme('style.css');
+      setActiveThemeButton(this);
+    });
+
+    document.getElementById('purpleTheme').addEventListener('click', function() {
+      setTheme('purple.css');
+      setActiveThemeButton(this);
+    });
+
+    function setTheme(cssFile) {
+      // Get the existing stylesheet link
+      let link = document.getElementById('theme-stylesheet');
+      // Update the href to the new CSS file
+      link.href = "{{ url_for('static', filename='css/') }}" + cssFile;
+      
+      // Save the preference to localStorage so it persists between page loads
+      localStorage.setItem('preferredTheme', cssFile);
+    }
+
+    function setActiveThemeButton(activeButton) {
+      // Remove active class from all buttons
+      document.querySelectorAll('.theme-button').forEach(button => {
+        button.classList.remove('active');
+      });
+      
+      // Add active class to the clicked button
+      activeButton.classList.add('active');
+    }
+
+    // Apply saved theme when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      const savedTheme = localStorage.getItem('preferredTheme');
+      if (savedTheme) {
+        setTheme(savedTheme);
+        
+        // Set the active button based on the saved theme
+        if (savedTheme === 'purple.css') {
+          setActiveThemeButton(document.getElementById('purpleTheme'));
+        } else {
+          setActiveThemeButton(document.getElementById('defaultTheme'));
+        }
+      }
+    });
+  </script>
 </body>
 </html>
