@@ -1,63 +1,148 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Lobby - {{ lobby_code }}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <!-- Updated Socket.IO client library -->
+  <title>Spy Game - Lobby</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" id="theme-stylesheet">
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-  <script>
-    // Set JS variables for host status and current user's nickname.
-    var isHost = {{ 'true' if is_host else 'false' }};
-    var myNick = "{{ nickname }}";
-    
-    var socket = io();
-    socket.on('connect', function() {
-      socket.emit('join_lobby');
-    });
-
-    socket.on('update_players', function(data) {
-      var list = document.getElementById('playerList');
-      list.innerHTML = '';
-      data.players.forEach(function(player) {
-        var li = document.createElement('li');
-        li.innerText = player.nickname;
-        // If current user is host and this player is not the host, add Kick button.
-        if(isHost && player.nickname !== myNick) {
-          var kickBtn = document.createElement('button');
-          kickBtn.innerText = "Kick";
-          kickBtn.className = "kick-btn";
-          kickBtn.onclick = function() {
-            socket.emit('kick_player', { sid: player.sid });
-          };
-          li.appendChild(kickBtn);
-        }
-        list.appendChild(li);
-      });
-    });
-
-    socket.on('game_started', function(data) {
-      window.location.href = "/game";
-    });
-
-    socket.on('error', function(data) {
-      alert(data.message);
-    });
-
-    socket.on('kicked', function(data) {
-      alert(data.message);
-      window.location.href = "/";
-    });
-  </script>
 </head>
 <body>
   <div class="container">
-    <h1>Lobby Code: {{ lobby_code }}</h1>
-    <p>Nickname: {{ nickname }}</p>
-    <h3>Players:</h3>
-    <ul id="playerList"></ul>
+    <h1>Spy Game - Lobby</h1>
+    
+    <div class="theme-selector">
+      <span>Theme:</span>
+      <button id="defaultTheme" class="theme-button active">Default</button>
+      <button id="purpleTheme" class="theme-button">Purple</button>
+    </div>
+    
+    <div class="lobby-details">
+      <h2>Game Details</h2>
+      <p>Lobby Code: <strong>{{ lobby_code }}</strong></p>
+      <p>Your Nickname: <strong>{{ nickname }}</strong></p>
+      <p>Your Role: <strong>{{ "Host" if is_host else "Player" }}</strong></p>
+    </div>
+    
+    <div class="players-list">
+      <h2>Players</h2>
+      <div id="players-container">
+        <!-- Players will be dynamically added here -->
+        <p>Waiting for players to join...</p>
+      </div>
+    </div>
+    
     {% if is_host %}
-      <button onclick="socket.emit('start_game')">Start Game</button>
+    <div class="host-controls">
+      <button id="start-game">Start Game</button>
+    </div>
     {% endif %}
   </div>
+  
+  <script>
+    var socket = io();
+    var isHost = {{ 'true' if is_host else 'false' }};
+    var myNick = "{{ nickname }}";
+    
+    // Connect to socket and join lobby
+    socket.on('connect', function() {
+      socket.emit('join_lobby');
+    });
+    
+    // Update players list when receiving player data
+    socket.on('update_players', function(data) {
+      var container = document.getElementById('players-container');
+      container.innerHTML = '';
+      
+      data.players.forEach(function(player) {
+        var playerItem = document.createElement('div');
+        playerItem.className = 'player-item';
+        
+        var nameSpan = document.createElement('span');
+        nameSpan.innerText = player.nickname + (player.points > 0 ? ' (' + player.points + ' pts)' : '');
+        playerItem.appendChild(nameSpan);
+        
+        // Add kick button for host (but can't kick self)
+        if(isHost && player.nickname !== myNick) {
+          var kickBtn = document.createElement('button');
+          kickBtn.className = 'kick-button';
+          kickBtn.innerText = 'Kick';
+          kickBtn.onclick = function() {
+            socket.emit('kick_player', { sid: player.sid });
+          };
+          playerItem.appendChild(kickBtn);
+        }
+        
+        container.appendChild(playerItem);
+      });
+    });
+    
+    // Error handling
+    socket.on('error', function(data) {
+      alert(data.message);
+    });
+    
+    // Handle game start
+    if(isHost) {
+      document.getElementById('start-game').addEventListener('click', function() {
+        socket.emit('start_game');
+      });
+    }
+    
+    // Handle redirect to game page
+    socket.on('game_started', function() {
+      window.location.href = '/game';
+    });
+    
+    // Handle getting kicked
+    socket.on('kicked', function(data) {
+      alert(data.message);
+      window.location.href = '/';
+    });
+
+    // Theme switching functionality
+    document.getElementById('defaultTheme').addEventListener('click', function() {
+      setTheme('style.css');
+      setActiveThemeButton(this);
+    });
+
+    document.getElementById('purpleTheme').addEventListener('click', function() {
+      setTheme('purple.css');
+      setActiveThemeButton(this);
+    });
+
+    function setTheme(cssFile) {
+      // Get the existing stylesheet link
+      let link = document.getElementById('theme-stylesheet');
+      // Update the href to the new CSS file
+      link.href = "{{ url_for('static', filename='css/') }}" + cssFile;
+      
+      // Save the preference to localStorage so it persists between page loads
+      localStorage.setItem('preferredTheme', cssFile);
+    }
+
+    function setActiveThemeButton(activeButton) {
+      // Remove active class from all buttons
+      document.querySelectorAll('.theme-button').forEach(button => {
+        button.classList.remove('active');
+      });
+      
+      // Add active class to the clicked button
+      activeButton.classList.add('active');
+    }
+
+    // Apply saved theme when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      const savedTheme = localStorage.getItem('preferredTheme');
+      if (savedTheme) {
+        setTheme(savedTheme);
+        
+        // Set the active button based on the saved theme
+        if (savedTheme === 'purple.css') {
+          setActiveThemeButton(document.getElementById('purpleTheme'));
+        } else {
+          setActiveThemeButton(document.getElementById('defaultTheme'));
+        }
+      }
+    });
+  </script>
 </body>
 </html>
