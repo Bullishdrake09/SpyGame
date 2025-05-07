@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from flask_socketio import SocketIO, join_room, emit, disconnect
 import random
 import string
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_here'
@@ -797,9 +798,9 @@ def game():
     lobby_code = session.get('lobby')
     if not lobby_code or lobby_code not in lobbies:
         return render_template('game_not_found.html')
-    return render_template('game.html', lobby_code=lobby_code, 
-                           nickname=session.get('nickname'), 
-                           is_host=(session.get('role')=='host'))
+    nickname = session.get('nickname')
+    is_host = (session.get('role') == 'host')
+    return render_template('game.html', lobby_code=lobby_code, nickname=nickname, is_host=is_host)
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -808,6 +809,20 @@ def page_not_found(e):
 # -----------------------
 # SOCKET.IO EVENTS
 # -----------------------
+@socketio.on('send_chat')
+def handle_send_chat(data):
+    lobby_code = session.get('lobby')
+    nickname = session.get('nickname')
+    message = data.get('message')
+
+    if not lobby_code or not nickname or not message:
+        return
+
+    emit('receive_chat', {
+        'message': message,
+        'nickname': nickname,
+        'timestamp': datetime.now().strftime("%H:%M")
+    }, room=lobby_code)
 
 @socketio.on('join_lobby')
 def handle_join_lobby():

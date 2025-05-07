@@ -6,7 +6,75 @@
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
   <style>
     /* Your enhanced black/red theme styles remain here */
+/* Two-column layout */
+    .game-container {
+      display: flex;
+      gap: 20px;
+      padding: 20px;
+    }
 
+    .game-main {
+      flex: 2;
+      min-width: 0; /* Prevent overflow issues */
+    }
+
+    .chat-sidebar {
+      flex: 1;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Chat styles (same as in lobby) */
+    .chat-section,
+    #chat-section {
+      background-color: #1a1a1a;
+      border: 1px solid #c40000;
+      border-radius: 6px;
+      padding: 15px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-box {
+      height: 300px;
+      overflow-y: auto;
+      border: 1px solid #333;
+      padding: 10px;
+      background-color: #111;
+      color: #fff;
+      margin-bottom: 10px;
+      flex-grow: 1;
+    }
+
+    .chat-box p {
+      margin: 5px 0;
+    }
+
+    .chat-input {
+      display: flex;
+    }
+
+    .chat-input input {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 4px 0 0 4px;
+    }
+
+    .chat-input button {
+      padding: 8px 16px;
+      border: none;
+      background-color: #c40000;
+      color: white;
+      border-radius: 0 4px 4px 0;
+      cursor: pointer;
+    }
+
+    .chat-input button:hover {
+      background-color: #ff0000;
+    }
     /* Additional styling for modal and toggle switches */
     .modal {
       display: none;
@@ -139,61 +207,85 @@
 </head>
 <body>
   <button id="openSettings">Settings</button>
-  <div class="container">
-    <h1>Spy Game</h1>
-    <p>Lobby: {{ lobby_code }} | Nickname: {{ nickname }}</p>
-    
-    <!-- Scoreboard -->
-    <div id="scoreboard">
-      <h3>Scoreboard</h3>
+
+  <!-- Two-column layout -->
+  <div class="game-container">
+    <!-- Main Game Content -->
+    <div class="game-main">
+      <h1>Spy Game</h1>
+      <p>Lobby: {{ lobby_code }} | Nickname: {{ nickname }}</p>
+
+      <!-- Scoreboard -->
+      <div id="scoreboard">
+        <h3>Scoreboard</h3>
+      </div>
+
+      <!-- Word Assignment -->
+      <div id="assignment">
+        <h2>Your Assignment</h2>
+        <p id="wordDisplay">Waiting for assignment...</p>
+      </div>
+
+      <!-- Description Section -->
+      <div id="description-section">
+        <h2>Enter your description</h2>
+        <textarea id="description-input" placeholder="Enter description here..."></textarea><br>
+        <button id="submit-description">Submit Description</button>
+        <p id="waiting-message"></p>
+      </div>
+
+      <!-- Submitted Descriptions -->
+      <div id="submitted-descriptions">
+        <h3>Submitted Descriptions</h3>
+      </div>
+
+      <!-- Voting Section -->
+      <div id="voting-section" style="display: none;">
+        <h2>Vote for the Spy</h2>
+        <form id="vote-form">
+          <div id="descriptions-list"></div>
+          <button type="submit">Submit Vote</button>
+        </form>
+      </div>
+
+      <!-- Host Controls -->
+      <div id="hostControls">
+        <button id="nextRoundButton">Next Round</button>
+      </div>
+
+      <!-- Message Box -->
+      <div id="message"></div>
     </div>
-    
-    <div id="assignment">
-      <h2>Your Assignment</h2>
-      <p id="wordDisplay">Waiting for assignment...</p>
+
+    <!-- Chat Sidebar -->
+    <div class="chat-sidebar">
+      <div id="chat-section">
+        <h2>Chat</h2>
+        <div id="chat-messages" class="chat-box"></div>
+        <div class="chat-input">
+          <input type="text" id="chat-input" placeholder="Type a message..." />
+          <button id="send-chat">Send</button>
+        </div>
+      </div>
     </div>
-    
-    <!-- Turn-based description section -->
-    <div id="description-section">
-      <h2>Enter your description</h2>
-      <textarea id="description-input" placeholder="Enter description here..."></textarea><br>
-      <button id="submit-description">Submit Description</button>
-      <p id="waiting-message"></p>
-    </div>
-    
-    <!-- Submitted descriptions (visible to all) -->
-    <div id="submitted-descriptions">
-      <h3>Submitted Descriptions</h3>
-    </div>
-    
-    <div id="voting-section" style="display: none;">
-      <h2>Vote for the Spy</h2>
-      <form id="vote-form">
-        <div id="descriptions-list"></div>
-        <button type="submit">Submit Vote</button>
-      </form>
-    </div>
-    
-    <!-- Host-only controls -->
-    <div id="hostControls">
-      <button id="nextRoundButton">Next Round</button>
-    </div>
-    
-    <div id="message"></div>
   </div>
-  
+
   <!-- Settings Modal -->
   <div id="settingsModal" class="modal">
     <div class="modal-content">
       <span class="close-button" id="closeSettings">&times;</span>
       <h2>Game Settings</h2>
+
+      <!-- Show Role Toggle -->
       <div class="setting-item">
-        <label for="toggleShowRole">See when you are a spy or not:</label>
+        <label for="toggleShowRole">See when you are a spy:</label>
         <label class="switch">
           <input type="checkbox" id="toggleShowRole">
           <span class="slider"></span>
         </label>
       </div>
+
+      <!-- Dead Vote Toggle -->
       <div class="setting-item">
         <label for="toggleDeadVote">Dead players can vote:</label>
         <label class="switch">
@@ -201,6 +293,8 @@
           <span class="slider"></span>
         </label>
       </div>
+
+      <!-- Animations Toggle -->
       <div class="setting-item">
         <label for="toggleAnimations">Enable animations:</label>
         <label class="switch">
@@ -208,6 +302,8 @@
           <span class="slider"></span>
         </label>
       </div>
+
+      <!-- Sound Toggle -->
       <div class="setting-item">
         <label for="toggleSound">Enable sound effects:</label>
         <label class="switch">
@@ -215,6 +311,8 @@
           <span class="slider"></span>
         </label>
       </div>
+
+      <!-- Theme Selection -->
       <div class="setting-item">
         <label>Theme:</label>
         <div class="theme-buttons">
@@ -222,16 +320,19 @@
           <button id="purpleTheme" class="theme-button">Purple</button>
         </div>
       </div>
+
+      <!-- Save Button -->
       <button id="saveSettings">Save Settings</button>
     </div>
   </div>
-  
+
+  <!-- Script Section -->
   <script>
     var isHost = {{ 'true' if is_host else 'false' }};
     var myNick = "{{ nickname }}";
     var currentDescriber = "";
     var socket = io();
-    
+  
     // Global client settings (defaults; will be updated by server)
     var clientSettings = {
       show_role: false,
@@ -240,89 +341,125 @@
       sound: true,
       theme: 'style.css'
     };
-
+  
+    // On connection, join lobby
     socket.on('connect', function() {
+      console.log('Connected to socket in game page');
       socket.emit('join_lobby');
     });
-    
+  
+    // Handle connection errors
+    socket.on('connect_error', function(err) {
+      console.error('Socket connection error:', err);
+    });
+  
+    // Update scoreboard
     socket.on('update_players', function(data) {
       var scoreboard = document.getElementById('scoreboard');
+      if (!scoreboard) return;
       scoreboard.innerHTML = "<h3>Scoreboard</h3>";
       data.players.forEach(function(player) {
         scoreboard.innerHTML += "<p>" + player.nickname + ": " + player.points + " pts</p>";
       });
     });
-    
+  
+    // Handle settings update
     socket.on('settings_updated', function(data) {
       clientSettings = data.settings;
-      document.getElementById('toggleShowRole').checked = clientSettings.show_role;
-      document.getElementById('toggleDeadVote').checked = clientSettings.dead_vote;
-      document.getElementById('toggleAnimations').checked = clientSettings.animations;
-      document.getElementById('toggleSound').checked = clientSettings.sound;
+      const toggleShowRole = document.getElementById('toggleShowRole');
+      const toggleDeadVote = document.getElementById('toggleDeadVote');
+      const toggleAnimations = document.getElementById('toggleAnimations');
+      const toggleSound = document.getElementById('toggleSound');
+      
+      if (toggleShowRole) toggleShowRole.checked = clientSettings.show_role;
+      if (toggleDeadVote) toggleDeadVote.checked = clientSettings.dead_vote;
+      if (toggleAnimations) toggleAnimations.checked = clientSettings.animations;
+      if (toggleSound) toggleSound.checked = clientSettings.sound;
     });
-    
+  
+    // Word assignment display
     socket.on('word_assignment', function(data) {
-      if(clientSettings.show_role) {
-        document.getElementById('wordDisplay').innerText = "Word: " + data.word + " (Role: " + data.role + ")";
+      const wordDisplay = document.getElementById('wordDisplay');
+      if (!wordDisplay) return;
+      
+      if (clientSettings.show_role) {
+        wordDisplay.innerText = "Word: " + data.word + " (Role: " + data.role + ")";
       } else {
-        document.getElementById('wordDisplay').innerText = "Word: " + data.word;
+        wordDisplay.innerText = "Word: " + data.word;
       }
     });
-    
+  
+    // Next describer handler
     socket.on('next_describer', function(data) {
       currentDescriber = data.describer;
-      if(myNick === currentDescriber) {
-        document.getElementById('description-section').style.display = 'block';
-        document.getElementById('waiting-message').innerText = "It's your turn to describe.";
+      const descriptionSection = document.getElementById('description-section');
+      const waitingMessage = document.getElementById('waiting-message');
+      
+      if (!descriptionSection || !waitingMessage) return;
+      
+      if (myNick === currentDescriber) {
+        descriptionSection.style.display = 'block';
+        waitingMessage.innerText = "It's your turn to describe.";
       } else {
-        document.getElementById('description-section').style.display = 'none';
-        document.getElementById('waiting-message').innerText = "Waiting for " + currentDescriber + " to describe.";
+        descriptionSection.style.display = 'none';
+        waitingMessage.innerText = "Waiting for " + currentDescriber + " to describe.";
       }
     });
-    
+  
+    // Description submission
     socket.on('description_submitted', function(data) {
-      var div = document.getElementById('submitted-descriptions');
-      var para = document.createElement('p');
+      const div = document.getElementById('submitted-descriptions');
+      if (!div) return;
+      
+      const para = document.createElement('p');
       para.innerText = data.nickname + ": " + data.description;
       div.appendChild(para);
     });
-    
-    document.getElementById('submit-description').addEventListener('click', function() {
-      var description = document.getElementById('description-input').value.trim();
-      if(description === "") {
+  
+    // Submit description button
+    document.getElementById('submit-description')?.addEventListener('click', function() {
+      const input = document.getElementById('description-input')?.value.trim();
+      if (!input) {
         alert("Please enter a description.");
         return;
       }
-      socket.emit('submit_description', { description: description });
+      socket.emit('submit_description', { description: input });
       document.getElementById('description-input').value = "";
     });
-    
+  
+    // Handle received descriptions
     socket.on('all_descriptions', function(data) {
-      document.getElementById('voting-section').style.display = 'block';
-      var listDiv = document.getElementById('descriptions-list');
+      const votingSection = document.getElementById('voting-section');
+      const listDiv = document.getElementById('descriptions-list');
+      
+      if (!votingSection || !listDiv) return;
+      
+      votingSection.style.display = 'block';
       listDiv.innerHTML = "";
+      
       data.descriptions.forEach(function(item, index) {
-        var radio = document.createElement('input');
+        const radio = document.createElement('input');
         radio.type = "radio";
         radio.name = "vote";
         radio.value = item.nickname;
         radio.id = "vote_" + index;
-        
-        var label = document.createElement('label');
+  
+        const label = document.createElement('label');
         label.htmlFor = "vote_" + index;
         label.innerText = item.nickname + ": " + item.description;
-        
+  
         listDiv.appendChild(radio);
         listDiv.appendChild(label);
         listDiv.appendChild(document.createElement('br'));
       });
       document.getElementById('message').innerText = "";
     });
-    
-    document.getElementById('vote-form').addEventListener('submit', function(e) {
+  
+    // Vote form submission
+    document.getElementById('vote-form')?.addEventListener('submit', function(e) {
       e.preventDefault();
-      var selected = document.querySelector('input[name="vote"]:checked');
-      if(!selected) {
+      const selected = document.querySelector('input[name="vote"]:checked');
+      if (!selected) {
         alert("Please select a player to vote for.");
         return;
       }
@@ -330,80 +467,88 @@
       document.getElementById('voting-section').style.display = 'none';
       document.getElementById('message').innerText = "Vote submitted. Waiting for results...";
     });
-    
+  
+    // Player elimination
     socket.on('player_eliminated', function(data) {
       document.getElementById('message').innerText = data.nickname + " was eliminated! (Role: " + data.role + ")";
     });
-    
+  
+    // Round over
     socket.on('round_over', function(data) {
       document.getElementById('message').innerText = data.message;
-      if(isHost) {
+      if (isHost) {
         document.getElementById('hostControls').style.display = 'block';
       }
     });
-    
+  
+    // New round
     socket.on('new_round', function(data) {
       document.getElementById('message').innerText = data.message;
       document.getElementById('voting-section').style.display = 'none';
       document.getElementById('hostControls').style.display = 'none';
       document.getElementById('submitted-descriptions').innerHTML = "<h3>Submitted Descriptions</h3>";
     });
-    
+  
+    // Vote failed
     socket.on('vote_failed', function(data) {
       document.getElementById('message').innerText = data.message;
     });
-    
+  
+    // Error handler
     socket.on('error', function(data) {
       alert(data.message);
     });
-    
-    var settingsModal = document.getElementById("settingsModal");
-    var openSettingsBtn = document.getElementById("openSettings");
-    var closeSettingsBtn = document.getElementById("closeSettings");
-    
-    openSettingsBtn.onclick = function() {
+  
+    // Settings modal controls
+    const settingsModal = document.getElementById("settingsModal");
+    const openSettingsBtn = document.getElementById("openSettings");
+    const closeSettingsBtn = document.getElementById("closeSettings");
+  
+    openSettingsBtn?.addEventListener('click', () => {
       settingsModal.style.display = "block";
-    }
-    closeSettingsBtn.onclick = function() {
+    });
+  
+    closeSettingsBtn?.addEventListener('click', () => {
       settingsModal.style.display = "none";
-    }
-    window.onclick = function(event) {
-      if(event.target == settingsModal) {
+    });
+  
+    window.addEventListener('click', function(event) {
+      if (event.target === settingsModal) {
         settingsModal.style.display = "none";
       }
-    }
-    
-    // Theme button functionality
-    document.getElementById('defaultTheme').addEventListener('click', function() {
+    });
+  
+    // Theme buttons
+    document.getElementById('defaultTheme')?.addEventListener('click', function() {
       setTheme('style.css');
       updateActiveThemeButton('defaultTheme');
     });
-
-    document.getElementById('purpleTheme').addEventListener('click', function() {
+  
+    document.getElementById('purpleTheme')?.addEventListener('click', function() {
       setTheme('purple.css');
       updateActiveThemeButton('purpleTheme');
     });
-
+  
+    // Set theme function
     function setTheme(cssFile) {
-      // Get the existing stylesheet link
-      let link = document.getElementById('theme-stylesheet');
-      // Update the href to the new CSS file
+      const link = document.getElementById('theme-stylesheet');
+      if (!link) return;
+      
       link.href = "{{ url_for('static', filename='css/') }}" + cssFile;
-      // Save the preference to localStorage
       localStorage.setItem('preferredTheme', cssFile);
       clientSettings.theme = cssFile;
     }
-
+  
+    // Update active theme button
     function updateActiveThemeButton(activeId) {
-      // Remove active class from all theme buttons
       document.querySelectorAll('.theme-button').forEach(button => {
         button.classList.remove('active');
       });
-      // Add active class to the selected button
-      document.getElementById(activeId).classList.add('active');
+      const activeButton = document.getElementById(activeId);
+      if (activeButton) activeButton.classList.add('active');
     }
-
-    // Apply saved theme when page loads
+  
+    // Apply saved theme
     document.addEventListener('DOMContentLoaded', function() {
       const savedTheme = localStorage.getItem('preferredTheme');
       if (savedTheme) {
@@ -411,34 +556,75 @@
         updateActiveThemeButton(savedTheme === 'purple.css' ? 'purpleTheme' : 'defaultTheme');
       }
     });
-    
-    if(!isHost) {
-      document.getElementById('toggleShowRole').disabled = true;
-      document.getElementById('toggleDeadVote').disabled = true;
-      document.getElementById('toggleAnimations').disabled = true;
-      document.getElementById('toggleSound').disabled = true;
-      document.getElementById('saveSettings').disabled = true;
-      // Note: Theme selection is still enabled for all users
+  
+    // Settings save
+    if (!isHost) {
+      document.getElementById('toggleShowRole')?.setAttribute('disabled', 'disabled');
+      document.getElementById('toggleDeadVote')?.setAttribute('disabled', 'disabled');
+      document.getElementById('toggleAnimations')?.setAttribute('disabled', 'disabled');
+      document.getElementById('toggleSound')?.setAttribute('disabled', 'disabled');
+      document.getElementById('saveSettings')?.setAttribute('disabled', 'disabled');
     }
-    
-    document.getElementById('saveSettings').addEventListener('click', function() {
-      var newSettings = {
-        show_role: document.getElementById('toggleShowRole').checked,
-        dead_vote: document.getElementById('toggleDeadVote').checked,
-        animations: document.getElementById('toggleAnimations').checked,
-        sound: document.getElementById('toggleSound').checked,
+  
+    document.getElementById('saveSettings')?.addEventListener('click', function() {
+      const newSettings = {
+        show_role: document.getElementById('toggleShowRole')?.checked || false,
+        dead_vote: document.getElementById('toggleDeadVote')?.checked || false,
+        animations: document.getElementById('toggleAnimations')?.checked || false,
+        sound: document.getElementById('toggleSound')?.checked || false,
         theme: clientSettings.theme
       };
       clientSettings = newSettings;
-      if(isHost) {
+      if (isHost) {
         socket.emit('update_settings', newSettings);
       }
       settingsModal.style.display = "none";
     });
-    
-    document.getElementById('nextRoundButton').addEventListener('click', function() {
+  
+    // Next round button
+    document.getElementById('nextRoundButton')?.addEventListener('click', function() {
       socket.emit('next_round');
       document.getElementById('hostControls').style.display = 'none';
+    });
+  
+    // ✅ CHAT FUNCTIONALITY STARTS HERE ✅
+    document.addEventListener('DOMContentLoaded', function () {
+      // Send chat message
+      const sendButton = document.getElementById('send-chat');
+      const chatInput = document.getElementById('chat-input');
+  
+      if (sendButton && chatInput) {
+        sendButton.addEventListener('click', function () {
+          const message = chatInput.value.trim();
+          if (message) {
+            socket.emit('send_chat', { message: message });
+            chatInput.value = '';
+          }
+        });
+  
+        chatInput.addEventListener('keypress', function (e) {
+          if (e.key === 'Enter') {
+            sendButton.click();
+          }
+        });
+      }
+  
+      // Receive chat message
+      socket.on('receive_chat', function (data) {
+        const chatBox = document.getElementById('chat-messages');
+        if (!chatBox) return;
+  
+        const messageEl = document.createElement('p');
+        messageEl.innerHTML = `<strong>${data.nickname}</strong> <small>(${data.timestamp})</small>: ${data.message}`;
+  
+        // Highlight own messages
+        if (data.nickname === myNick) {
+          messageEl.style.color = "#00ffaa";
+        }
+  
+        chatBox.appendChild(messageEl);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
     });
   </script>
 </body>
