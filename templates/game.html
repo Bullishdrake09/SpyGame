@@ -20,7 +20,7 @@
 
     .chat-sidebar {
       flex: 1;
-      max-width: 400px;
+      max-width: 500px;
       display: flex;
       flex-direction: column;
     }
@@ -35,6 +35,7 @@
       flex: 1;
       display: flex;
       flex-direction: column;
+      max-width: 500px; /* Wider chat box */
     }
 
     .chat-box {
@@ -46,10 +47,15 @@
       color: #fff;
       margin-bottom: 10px;
       flex-grow: 1;
+      word-wrap: break-word; /* Prevent stretching */
+      white-space: pre-wrap; /* Preserve line breaks */
     }
 
     .chat-box p {
       margin: 5px 0;
+      color: #fff; /* Omit in Lobby HTML */
+      word-wrap: break-word;
+      white-space: pre-wrap;
     }
 
     .chat-input {
@@ -250,7 +256,7 @@
 
       <!-- Host Controls -->
       <div id="hostControls">
-        <button id="nextRoundButton">Next Round</button>
+        <button id="nextRoundButton" style="display: {% if is_host %}block{% else %}none{% endif %};">Next Round</button>
       </div>
 
       <!-- Message Box -->

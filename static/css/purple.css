@@ -254,3 +254,4 @@ ul.dark-list .action:hover { background: var(--accent-base); color: #000; }
 
 /* DIVIDER */
 hr.divider { border:none; height:2px; background:linear-gradient(90deg,transparent,var(--accent-base),transparent); margin:40px
+
