@@ -48,6 +48,27 @@
 .chat-input button:hover {
   background-color: #ff0000;
 }
+#toast {
+  visibility: hidden;
+  min-width: 150px;
+  background: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 4px;
+  padding: 10px;
+  position: fixed;
+  z-index: 1000;
+  left: 50%;
+  bottom: 30px;
+  margin-left: -75px;
+  opacity: 0;
+  transition: opacity 0.5s, visibility 0.5s;
+}
+
+#toast.show {
+  visibility: visible;
+  opacity: 1;
+}
   </style>
 </head>
 <body>
@@ -81,6 +102,11 @@
     </div>
     {% endif %}
   </div>
+  <!-- Inside your lobby.html body -->
+<div id="Linksharebutton">
+  <!-- New "Share Link" button for all users -->
+  <button onclick="copyLink()" class="share-button">Share Link</button>
+</div>
 
   <div class="chat-section">
     <h2>Chat</h2>
@@ -91,7 +117,7 @@
     </div>
   </div>
 
-
+  <div id="toast">Link copied!</div>
   <script>
     var socket = io();
     var isHost = {{ 'true' if is_host else 'false' }};
@@ -225,6 +251,25 @@
         chatBox.appendChild(messageEl);
         chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
     });
+    async function copyLink() {
+    const code = '{{ lobby_code }}'; // Rendered server-side
+    const link = window.location.origin + '/link/' + code;
+
+    try {
+      await navigator.clipboard.writeText(link); // Copy to clipboard
+
+      // Show toast notification
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+
+      // Hide toast after 3 seconds
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    } catch (err) {
+      alert('Failed to copy link: ' + err);
+    }
+  }
   </script>
 </body>
 </html>

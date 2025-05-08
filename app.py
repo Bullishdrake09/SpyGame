@@ -793,6 +793,12 @@ def lobby(code):
     is_host = (session.get('role') == 'host')
     return render_template('lobby.html', lobby_code=code, is_host=is_host, nickname=session.get('nickname'))
 
+@app.route('/link/<code>')
+def share_link(code):
+    # Render the nickname input page
+    return render_template('share_link.html', code=code)
+
+
 @app.route('/game')
 def game():
     lobby_code = session.get('lobby')
