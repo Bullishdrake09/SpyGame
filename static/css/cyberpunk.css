@@ -1,0 +1,692 @@
+/* Cyberpunk Neon Theme - Modern Reset and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #00d4ff;
+  --primary-light: #66e0ff;
+  --primary-dark: #0099cc;
+  --secondary: #ff006e;
+  --accent: #7209b7;
+  --bg-dark: #0a0a0f;
+  --bg-darker: #000005;
+  --surface: #1a1a2e;
+  --surface-light: #16213e;
+  --text: #e0f6ff;
+  --text-muted: #8cc8ff;
+  --border-radius: 12px;
+  --transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+  --glow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+body {
+  font-family: 'JetBrains Mono', 'Courier New', 'Consolas', monospace;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(114, 9, 183, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(255, 0, 110, 0.1) 0%, transparent 50%),
+    linear-gradient(135deg, var(--bg-darker) 0%, #0f0f23 100%);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: hidden;
+  padding: 20px;
+  line-height: 1.6;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 212, 255, 0.03) 2px,
+      rgba(0, 212, 255, 0.03) 4px
+    );
+  pointer-events: none;
+  z-index: -1;
+  animation: scanlines 0.1s linear infinite;
+}
+
+/* Container with enhanced cyberpunk glass morphism */
+.container {
+  background: 
+    linear-gradient(135deg, 
+      rgba(26, 26, 46, 0.9) 0%, 
+      rgba(22, 33, 62, 0.8) 50%,
+      rgba(26, 26, 46, 0.9) 100%
+    );
+  backdrop-filter: blur(12px) saturate(180%);
+  max-width: 900px;
+  width: 100%;
+  margin: 20px auto;
+  padding: 40px;
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(0, 212, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    var(--glow);
+  animation: containerFloat 6s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.container::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, 
+    var(--primary), var(--secondary), var(--accent), var(--primary));
+  border-radius: var(--border-radius);
+  z-index: -1;
+  animation: borderGlow 3s linear infinite;
+  opacity: 0.6;
+}
+
+.container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(0, 212, 255, 0.1), 
+    transparent);
+  animation: dataStream 4s ease-in-out infinite;
+}
+
+/* Typography with cyberpunk flair */
+h1, h2, h3 {
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 30px;
+  color: #fff;
+  text-shadow: 
+    0 0 10px rgba(0, 212, 255, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.8);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: 2.5rem;
+  background: linear-gradient(135deg, 
+    var(--primary) 0%, 
+    var(--secondary) 50%, 
+    var(--accent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  padding-bottom: 10px;
+  position: relative;
+  animation: titleGlow 2s ease-in-out infinite alternate;
+}
+
+h1::before {
+  content: ">";
+  position: absolute;
+  left: -30px;
+  color: var(--primary);
+  animation: blink 1.5s infinite;
+}
+
+h1::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  right: 20%;
+  height: 3px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    var(--primary), 
+    var(--secondary), 
+    var(--primary), 
+    transparent);
+  border-radius: 2px;
+  box-shadow: var(--glow);
+}
+
+h2 {
+  font-size: 1.6rem;
+  color: var(--primary-light);
+  margin-top: 35px;
+}
+
+h3 {
+  font-size: 1.3rem;
+  color: var(--text-muted);
+}
+
+/* Enhanced form container */
+.form-container {
+  margin: 30px 0;
+  padding: 30px;
+  background: 
+    linear-gradient(135deg, 
+      rgba(22, 33, 62, 0.8) 0%, 
+      rgba(26, 26, 46, 0.6) 100%);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  box-shadow: 
+    0 8px 20px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.form-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent, var(--primary), transparent);
+  animation: scanLine 3s ease-in-out infinite;
+}
+
+.form-container:hover {
+  border-color: rgba(0, 212, 255, 0.7);
+  box-shadow: 
+    0 12px 28px rgba(0, 0, 0, 0.4),
+    var(--glow);
+  transform: translateY(-2px);
+}
+
+/* Cyberpunk form elements */
+label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+}
+
+input[type="text"],
+textarea {
+  width: 100%;
+  padding: 15px 20px;
+  margin-bottom: 25px;
+  border: 2px solid rgba(0, 212, 255, 0.3);
+  border-radius: calc(var(--border-radius) - 4px);
+  font-size: 1rem;
+  font-family: inherit;
+  background: 
+    linear-gradient(135deg, 
+      rgba(10, 10, 15, 0.9) 0%, 
+      rgba(22, 33, 62, 0.7) 100%);
+  color: var(--text);
+  transition: var(--transition);
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 0 0 rgba(0, 212, 255, 0);
+}
+
+input[type="text"]:focus,
+textarea:focus {
+  border-color: var(--primary);
+  outline: none;
+  transform: translateY(-3px);
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 0 3px rgba(0, 212, 255, 0.3),
+    var(--glow);
+  background: 
+    linear-gradient(135deg, 
+      rgba(10, 10, 15, 1) 0%, 
+      rgba(22, 33, 62, 0.9) 100%);
+}
+
+input[type="text"]::placeholder,
+textarea::placeholder {
+  color: rgba(140, 200, 255, 0.5);
+  font-style: italic;
+}
+
+/* Futuristic buttons */
+button {
+  background: linear-gradient(135deg, 
+    var(--primary) 0%, 
+    var(--primary-dark) 100%);
+  color: #000;
+  padding: 15px 30px;
+  border-radius: calc(var(--border-radius) - 4px);
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: var(--transition);
+  box-shadow: 
+    0 6px 12px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.2), 
+    transparent);
+  transition: var(--transition);
+}
+
+button:hover {
+  background: linear-gradient(135deg, 
+    var(--primary-light) 0%, 
+    var(--primary) 100%);
+  transform: translateY(-3px);
+  box-shadow: 
+    0 10px 20px rgba(0, 0, 0, 0.4),
+    var(--glow);
+}
+
+button:hover::before {
+  left: 100%;
+}
+
+button:active {
+  transform: translateY(0px);
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.3),
+    inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Enhanced Player List */
+ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 25px 0;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+li {
+  padding: 18px 24px;
+  background: linear-gradient(135deg, 
+    rgba(26, 26, 46, 0.8) 0%, 
+    rgba(22, 33, 62, 0.6) 100%);
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: var(--transition);
+  color: var(--text);
+  position: relative;
+  overflow: hidden;
+}
+
+li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--primary);
+  transform: scaleY(0);
+  transition: var(--transition);
+}
+
+li:last-child {
+  border-bottom: none;
+}
+
+li:hover {
+  background: linear-gradient(135deg, 
+    rgba(0, 212, 255, 0.1) 0%, 
+    rgba(114, 9, 183, 0.1) 100%);
+  transform: translateX(10px);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    inset 0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+li:hover::before {
+  transform: scaleY(1);
+}
+
+.kick-btn {
+  background: linear-gradient(135deg, 
+    var(--secondary) 0%, 
+    var(--accent) 100%);
+  border: none;
+  padding: 10px 18px;
+  border-radius: calc(var(--border-radius) - 6px);
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kick-btn:hover {
+  background: linear-gradient(135deg, 
+    rgba(255, 0, 110, 1.2) 0%, 
+    rgba(114, 9, 183, 1.2) 100%);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 12px rgba(0, 0, 0, 0.4),
+    0 0 15px rgba(255, 0, 110, 0.4);
+}
+
+/* Enhanced Sections */
+#assignment, #description-section, #voting-section {
+  margin: 35px 0;
+  padding: 30px;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  background: 
+    linear-gradient(135deg, 
+      rgba(26, 26, 46, 0.7) 0%, 
+      rgba(22, 33, 62, 0.5) 100%);
+  border-radius: var(--border-radius);
+  box-shadow: 
+    0 8px 20px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: sectionSlide 0.6s ease-out;
+  position: relative;
+  transition: var(--transition);
+  overflow: hidden;
+}
+
+#assignment::before, #description-section::before, #voting-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    var(--primary), var(--secondary), var(--accent));
+  opacity: 0.7;
+}
+
+#assignment:hover, #description-section:hover, #voting-section:hover {
+  border-color: rgba(0, 212, 255, 0.6);
+  box-shadow: 
+    0 12px 28px rgba(0, 0, 0, 0.3),
+    var(--glow);
+  transform: translateY(-3px);
+}
+
+#assignment p {
+  font-size: 1.15rem;
+  color: var(--text);
+  line-height: 1.8;
+  font-weight: 400;
+}
+
+/* Enhanced Voting section */
+#descriptions-list {
+  margin-top: 25px;
+}
+
+#descriptions-list div {
+  margin-bottom: 15px;
+  padding: 15px;
+  background: 
+    linear-gradient(135deg, 
+      rgba(22, 33, 62, 0.6) 0%, 
+      rgba(26, 26, 46, 0.4) 100%);
+  border-radius: calc(var(--border-radius) - 4px);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  transition: var(--transition);
+  position: relative;
+}
+
+#descriptions-list div:hover {
+  background: 
+    linear-gradient(135deg, 
+      rgba(0, 212, 255, 0.1) 0%, 
+      rgba(114, 9, 183, 0.1) 100%);
+  border-color: rgba(0, 212, 255, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+#descriptions-list input[type="radio"] {
+  accent-color: var(--primary);
+  transform: scale(1.2);
+}
+
+#descriptions-list label {
+  font-size: 1rem;
+  margin-left: 15px;
+  color: var(--text);
+  transition: var(--transition);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Enhanced Message area */
+#message {
+  margin: 30px 0;
+  padding: 20px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--primary-light);
+  font-size: 1.15rem;
+  background: 
+    linear-gradient(135deg, 
+      rgba(0, 212, 255, 0.1) 0%, 
+      rgba(114, 9, 183, 0.1) 100%);
+  border-radius: var(--border-radius);
+  border-left: 4px solid var(--primary);
+  border-right: 4px solid var(--secondary);
+  animation: messageGlow 3s ease-in-out infinite;
+  font-family: inherit;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Host Controls */
+#hostControls {
+  display: none;
+  margin-top: 25px;
+  padding: 25px;
+  background: 
+    linear-gradient(135deg, 
+      rgba(22, 33, 62, 0.8) 0%, 
+      rgba(26, 26, 46, 0.6) 100%);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  box-shadow: var(--glow);
+}
+
+/* Cyberpunk Animations */
+@keyframes containerFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes borderGlow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes dataStream {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes titleGlow {
+  0% { 
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+  }
+  100% { 
+    text-shadow: 
+      0 0 20px rgba(0, 212, 255, 0.8),
+      0 0 30px rgba(255, 0, 110, 0.3);
+  }
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+@keyframes scanLine {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes sectionSlide {
+  from { opacity: 0; transform: translateX(-50px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes messageGlow {
+  0%, 100% { 
+    box-shadow: 
+      0 0 10px rgba(0, 212, 255, 0.3),
+      inset 0 0 10px rgba(0, 212, 255, 0.1);
+  }
+  50% { 
+    box-shadow: 
+      0 0 25px rgba(0, 212, 255, 0.6),
+      0 0 35px rgba(255, 0, 110, 0.2),
+      inset 0 0 15px rgba(0, 212, 255, 0.2);
+  }
+}
+
+@keyframes scanlines {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(4px); }
+}
+
+/* Improved Responsive design */
+@media (max-width: 600px) {
+  .container {
+    padding: 25px;
+    width: 95%;
+  }
+  
+  h1 {
+    font-size: 2rem;
+  }
+  
+  h1::before {
+    left: -20px;
+  }
+  
+  button {
+    width: 100%;
+    padding: 18px;
+  }
+  
+  li {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+  }
+  
+  .kick-btn {
+    margin-top: 15px;
+    align-self: flex-end;
+  }
+  
+  #assignment, #description-section, #voting-section {
+    padding: 25px;
+  }
+}
+
+/* Additional cyberpunk styling */
+hr {
+  border: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    var(--primary), 
+    var(--secondary), 
+    var(--primary), 
+    transparent);
+  margin: 40px 0;
+  border-radius: 1px;
+  box-shadow: var(--glow);
+}
+
+button:disabled {
+  background: linear-gradient(135deg, #555, #333);
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.5;
+  color: #888;
+}
+
+footer {
+  text-align: center;
+  margin-top: 50px;
+  padding: 25px 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  border-top: 1px solid rgba(0, 212, 255, 0.2);
+  font-family: inherit;
+}
+
+/* Enhanced focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
+}
+
+/* Cyberpunk scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border-radius: 5px;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, var(--primary-light), var(--secondary));
+}
