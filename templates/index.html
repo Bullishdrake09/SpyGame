@@ -12,6 +12,12 @@
       <span>Theme:</span>
       <button id="defaultTheme" class="theme-button active">Default</button>
       <button id="purpleTheme" class="theme-button">Purple</button>
+      <!-- New Cyberpunk Theme Button -->
+      <button id="cyberpunkTheme" class="theme-button">Cyberpunk</button>
+      <!-- New Blue Theme Button -->
+      <button id="blueTheme" class="theme-button">Blue</button>
+      <button id="matrixTheme" class="theme-button">Matrix</button>
+      <button id="pinkTheme" class="theme-button">Pink</button>
     </div>
     
     <div class="form-container">
@@ -33,51 +39,83 @@
   </div>
 
   <script>
-    // Theme switching functionality
-    document.getElementById('defaultTheme').addEventListener('click', function() {
-      setTheme('style.css');
-      setActiveThemeButton(this);
+  // Theme switching functionality
+  document.getElementById('defaultTheme').addEventListener('click', function () {
+    setTheme('style.css');
+    setActiveThemeButton(this);
+  });
+
+  document.getElementById('purpleTheme').addEventListener('click', function () {
+    setTheme('purple.css');
+    setActiveThemeButton(this);
+  });
+
+  document.getElementById('cyberpunkTheme').addEventListener('click', function () {
+    setTheme('cyberpunk.css');
+    setActiveThemeButton(this);
+  });
+
+  document.getElementById('blueTheme').addEventListener('click', function () {
+    setTheme('blue.css');
+    setActiveThemeButton(this);
+  });
+
+  document.getElementById('matrixTheme').addEventListener('click', function () {
+    setTheme('matrix.css');
+    setActiveThemeButton(this);
+  });
+
+  document.getElementById('pinkTheme').addEventListener('click', function () {
+    setTheme('pink.css');
+    setActiveThemeButton(this);
+  });
+
+  function setTheme(cssFile) {
+    // Get the existing stylesheet link
+    const link = document.getElementById('theme-stylesheet');
+    // Update the href to the new CSS file
+    link.href = "{{ url_for('static', filename='css/') }}" + cssFile;
+
+    // Save the preference to localStorage so it persists between page loads
+    localStorage.setItem('preferredTheme', cssFile);
+  }
+
+  function setActiveThemeButton(activeButton) {
+    // Remove active class from all buttons
+    document.querySelectorAll('.theme-button').forEach(button => {
+      button.classList.remove('active');
     });
 
-    document.getElementById('purpleTheme').addEventListener('click', function() {
-      setTheme('purple.css');
-      setActiveThemeButton(this);
-    });
+    // Add active class to the clicked button
+    activeButton.classList.add('active');
+  }
 
-    function setTheme(cssFile) {
-      // Get the existing stylesheet link
-      let link = document.getElementById('theme-stylesheet');
-      // Update the href to the new CSS file
-      link.href = "{{ url_for('static', filename='css/') }}" + cssFile;
-      
-      // Save the preference to localStorage so it persists between page loads
-      localStorage.setItem('preferredTheme', cssFile);
-    }
+  // Apply saved theme when page loads
+  document.addEventListener('DOMContentLoaded', function () {
+    const savedTheme = localStorage.getItem('preferredTheme');
 
-    function setActiveThemeButton(activeButton) {
-      // Remove active class from all buttons
-      document.querySelectorAll('.theme-button').forEach(button => {
-        button.classList.remove('active');
-      });
-      
-      // Add active class to the clicked button
-      activeButton.classList.add('active');
-    }
+    if (savedTheme) {
+      setTheme(savedTheme);
 
-    // Apply saved theme when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-      const savedTheme = localStorage.getItem('preferredTheme');
-      if (savedTheme) {
-        setTheme(savedTheme);
-        
-        // Set the active button based on the saved theme
-        if (savedTheme === 'purple.css') {
-          setActiveThemeButton(document.getElementById('purpleTheme'));
-        } else {
-          setActiveThemeButton(document.getElementById('defaultTheme'));
-        }
+      // Map CSS filenames to their corresponding button IDs
+      const themeButtonMap = {
+        'style.css': 'defaultTheme',
+        'purple.css': 'purpleTheme',
+        'cyberpunk.css': 'cyberpunkTheme',
+        'blue.css': 'blueTheme'
+      };
+
+      const buttonId = themeButtonMap[savedTheme] || 'defaultTheme';
+      const button = document.getElementById(buttonId);
+
+      if (button) {
+        setActiveThemeButton(button);
       }
-    });
-  </script>
+    } else {
+      // Default to the first theme if no preference is saved
+      setActiveThemeButton(document.getElementById('defaultTheme'));
+    }
+  });
+</script>
 </body>
 </html>
