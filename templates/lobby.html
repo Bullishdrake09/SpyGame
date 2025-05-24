@@ -79,6 +79,12 @@
       <span>Theme:</span>
       <button id="defaultTheme" class="theme-button active">Default</button>
       <button id="purpleTheme" class="theme-button">Purple</button>
+      <!-- New Cyberpunk Theme Button -->
+      <button id="cyberpunkTheme" class="theme-button">Cyberpunk</button>
+      <!-- New Blue Theme Button -->
+      <button id="blueTheme" class="theme-button">Blue</button>
+      <button id="matrixTheme" class="theme-button">Matrix</button>
+      <button id="pinkTheme" class="theme-button">Pink</button>
     </div>
     
     <div class="lobby-details">
@@ -180,13 +186,33 @@
     });
 
     // Theme switching functionality
-    document.getElementById('defaultTheme').addEventListener('click', function() {
+    document.getElementById('defaultTheme').addEventListener('click', function () {
       setTheme('style.css');
       setActiveThemeButton(this);
     });
 
-    document.getElementById('purpleTheme').addEventListener('click', function() {
+    document.getElementById('purpleTheme').addEventListener('click', function () {
       setTheme('purple.css');
+      setActiveThemeButton(this);
+    });
+
+    document.getElementById('cyberpunkTheme').addEventListener('click', function () {
+      setTheme('cyberpunk.css');
+      setActiveThemeButton(this);
+    });
+
+    document.getElementById('blueTheme').addEventListener('click', function () {
+      setTheme('blue.css');
+      setActiveThemeButton(this);
+    });
+
+    document.getElementById('matrixTheme').addEventListener('click', function () {
+      setTheme('matrix.css');
+      setActiveThemeButton(this);
+    });
+
+    document.getElementById('pinkTheme').addEventListener('click', function () {
+      setTheme('pink.css');
       setActiveThemeButton(this);
     });
 
