@@ -319,12 +319,14 @@
       </div>
 
       <!-- Theme Selection -->
-      <div class="setting-item">
-        <label>Theme:</label>
-        <div class="theme-buttons">
-          <button id="defaultTheme" class="theme-button active">Default</button>
-          <button id="purpleTheme" class="theme-button">Purple</button>
-        </div>
+      <div class="theme-selector">
+        <span>Theme:</span>
+        <button id="defaultTheme" class="theme-button active">Default</button>
+        <button id="purpleTheme" class="theme-button">Purple</button>
+        <button id="cyberpunkTheme" class="theme-button">Cyberpunk</button>
+        <button id="blueTheme" class="theme-button">Blue</button>
+        <button id="matrixTheme" class="theme-button">Matrix</button>
+        <button id="pinkTheme" class="theme-button">Pink</button>
       </div>
 
       <!-- Save Button -->
@@ -524,17 +526,37 @@
       }
     });
   
-    // Theme buttons
-    document.getElementById('defaultTheme')?.addEventListener('click', function() {
+    // Theme switching functionality
+    document.getElementById('defaultTheme').addEventListener('click', function () {
       setTheme('style.css');
-      updateActiveThemeButton('defaultTheme');
+      setActiveThemeButton(this);
     });
-  
-    document.getElementById('purpleTheme')?.addEventListener('click', function() {
+
+    document.getElementById('purpleTheme').addEventListener('click', function () {
       setTheme('purple.css');
-      updateActiveThemeButton('purpleTheme');
+      setActiveThemeButton(this);
+    });
+
+    document.getElementById('cyberpunkTheme').addEventListener('click', function () {
+      setTheme('cyberpunk.css');
+      setActiveThemeButton(this);
+    });
+
+    document.getElementById('blueTheme').addEventListener('click', function () {
+      setTheme('blue.css');
+      setActiveThemeButton(this);
+    });
+
+    document.getElementById('matrixTheme').addEventListener('click', function () {
+      setTheme('matrix.css');
+      setActiveThemeButton(this);
     });
   
+    document.getElementById('pinkTheme').addEventListener('click', function () {
+      setTheme('pink.css');
+      setActiveThemeButton(this);
+    });
+
     // Set theme function
     function setTheme(cssFile) {
       const link = document.getElementById('theme-stylesheet');
