@@ -1,659 +1,901 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Spy Game - In Game</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" id="theme-stylesheet">
-  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-  <style>
-    /* Your enhanced black/red theme styles remain here */
-/* Two-column layout */
-    .game-container {
-      display: flex;
-      gap: 20px;
-      padding: 20px;
-    }
+    <title>Spy Game (Beta) - Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" id="theme-stylesheet">
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <style>
+        /* General styling for animated elements */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
 
-    .game-main {
-      flex: 2;
-      min-width: 0; /* Prevent overflow issues */
-    }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    .chat-sidebar {
-      flex: 1;
-      max-width: 500px;
-      display: flex;
-      flex-direction: column;
-    }
+        /* Styling for player elimination message */
+        .eliminated-message {
+            background-color: #c40000; /* Red from default theme */
+            color: white;
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+        }
 
-    /* Chat styles (same as in lobby) */
-    .chat-section,
-    #chat-section {
-      background-color: #1a1a1a;
-      border: 1px solid #c40000;
-      border-radius: 6px;
-      padding: 15px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      max-width: 500px; /* Wider chat box */
-    }
+        /* Styling for the next round button */
+        #next-round-button {
+            display: none; /* Hidden by default */
+            margin-top: 20px;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            background-color: #007bff; /* Blue */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
 
-    .chat-box {
-      height: 300px;
-      overflow-y: auto;
-      border: 1px solid #333;
-      padding: 10px;
-      background-color: #111;
-      color: #fff;
-      margin-bottom: 10px;
-      flex-grow: 1;
-      word-wrap: break-word; /* Prevent stretching */
-      white-space: pre-wrap; /* Preserve line breaks */
-    }
+        #next-round-button:hover {
+            background-color: #0056b3;
+        }
 
-    .chat-box p {
-      margin: 5px 0;
-      color: #fff; /* Omit in Lobby HTML */
-      word-wrap: break-word;
-      white-space: pre-wrap;
-    }
+        /* Styling for revealed roles section */
+        .revealed-roles {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #1a1a1a;
+            border: 1px solid #c40000;
+            border-radius: 6px;
+        }
 
-    .chat-input {
-      display: flex;
-    }
+        .revealed-roles p {
+            margin: 5px 0;
+        }
 
-    .chat-input input {
-      flex: 1;
-      padding: 8px;
-      border: none;
-      border-radius: 4px 0 0 4px;
-    }
+        .player-role-normal {
+            color: #4CAF50; /* Green for normal */
+            font-weight: bold;
+        }
 
-    .chat-input button {
-      padding: 8px 16px;
-      border: none;
-      background-color: #c40000;
-      color: white;
-      border-radius: 0 4px 4px 0;
-      cursor: pointer;
-    }
+        .player-role-spy {
+            color: #FFC107; /* Orange for spy */
+            font-weight: bold;
+        }
 
-    .chat-input button:hover {
-      background-color: #ff0000;
-    }
-    /* Additional styling for modal and toggle switches */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 100;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0, 0, 0, 0.8);
-    }
-    .modal-content {
-      background-color: #222;
-      margin: 10% auto;
-      padding: 20px;
-      border: 1px solid #c40000;
-      width: 80%;
-      max-width: 500px;
-      border-radius: 8px;
-      position: relative;
-      animation: slideIn 0.5s ease-out;
-      color: #fff;
-    }
-    .close-button {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .close-button:hover {
-      color: #fff;
-    }
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 50px;
-      height: 24px;
-      margin-left: 10px;
-    }
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #ff4444;
-      transition: 0.4s;
-      border-radius: 24px;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background-color: #fff;
-      transition: 0.4s;
-      border-radius: 50%;
-    }
-    input:checked + .slider {
-      background-color: #00cc00;
-    }
-    input:checked + .slider:before {
-      transform: translateX(26px);
-    }
-    .setting-item {
-      margin: 15px 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    #openSettings {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background-color: #c40000;
-      color: #fff;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      z-index: 101;
-    }
-    #openSettings:hover {
-      background-color: #ff0000;
-    }
-    /* Scoreboard styling */
-    #scoreboard {
-      margin: 15px 0;
-      padding: 10px;
-      background: #1a1a1a;
-      border: 1px solid #c40000;
-      border-radius: 6px;
-      color: #fff;
-    }
-    #scoreboard h3 {
-      margin-bottom: 10px;
-    }
-    /* Turn-based description styling */
-    #waiting-message {
-      margin: 15px 0;
-      text-align: center;
-      font-size: 1.1rem;
-      color: #fff;
-    }
-    #submitted-descriptions {
-      margin-top: 20px;
-      padding: 10px;
-      background: #1a1a1a;
-      border: 1px solid #c40000;
-      border-radius: 6px;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    #submitted-descriptions p {
-      margin: 5px 0;
-      color: #fff;
-    }
-  </style>	
+        /* Layout for description and vote sections */
+        .game-sections-wrapper { /* New wrapper for the main game interactive sections */
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .game-section {
+            flex: 1;
+            min-width: 300px; /* Minimum width before wrapping */
+            padding: 15px;
+            background-color: #1a1a1a;
+            border: 1px solid #c40000;
+            border-radius: 6px;
+        }
+
+        .description-item {
+            background-color: #2a2a2a;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border-left: 3px solid #c40000;
+        }
+
+        .vote-button {
+            padding: 8px 12px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .vote-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Added for visual feedback on selected vote button */
+        .vote-button.active-vote {
+            background-color: #28a745; /* A distinct color, e.g., green */
+            box-shadow: 0 0 0 3px #28a74550; /* A subtle glow */
+            border: 1px solid #1e7e34;
+        }
+
+        .vote-button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+
+        .player-item.eliminated {
+            text-decoration: line-through;
+            color: #888;
+        }
+
+        /* Adjustments for smaller screens */
+        @media (max-width: 768px) {
+            .game-sections-wrapper {
+                flex-direction: column;
+                align-items: center;
+            }
+            .game-section {
+                width: 90%;
+            }
+        }
+
+        /* Styles for the elimination reveal animation */
+        #elimination-reveal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8); /* Dark overlay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001; /* Above other content */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+            flex-direction: column;
+        }
+
+        #elimination-reveal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #elimination-reveal-overlay #emoji-cycler {
+            font-size: 8em; /* Large emoji */
+            margin-bottom: 20px;
+            animation: bounce 0.5s infinite alternate; /* Optional subtle bounce */
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+
+        #elimination-reveal-overlay #reveal-text {
+            color: white;
+            font-size: 1.5em;
+            text-align: center;
+            line-height: 1.6;
+            opacity: 0; /* Hidden until animation stops */
+            transition: opacity 0.5s ease-in;
+            white-space: pre-wrap; /* Preserve line breaks from backend message */
+        }
+
+        /* Styling for the new close animation button */
+        #close-animation-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #c40000; /* Red color */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+            display: none; /* Hidden by default */
+        }
+
+        #close-animation-button:hover {
+            background-color: #ff0000;
+        }
+
+        /* Custom Modal Styling */
+        #custom-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000; /* Higher than elimination overlay */
+        }
+
+        #custom-modal-overlay > div { /* The modal content box */
+            background-color: #2a2a2a;
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            text-align: center;
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        #custom-modal-overlay h3 {
+            margin-bottom: 15px;
+            color: #FFD700; /* Gold color for titles */
+        }
+
+        #custom-modal-overlay p {
+            margin-bottom: 20px;
+        }
+
+        #custom-modal-overlay button {
+            padding: 10px 20px;
+            background-color: #c40000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        #custom-modal-overlay button:hover {
+            background-color: #ff0000;
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        /* Styles for Settings Section */
+        .settings-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #1a1a1a;
+            border: 1px solid #c40000;
+            border-radius: 6px;
+        }
+
+        .settings-section h2 {
+            margin-bottom: 10px;
+            color: #FFD700;
+        }
+
+        .settings-section .theme-buttons-container,
+        .settings-section .game-mode-settings {
+            margin-bottom: 15px;
+        }
+
+        .settings-section .theme-buttons-container button,
+        .settings-section .game-mode-setting label {
+            margin-right: 10px;
+            margin-bottom: 5px;
+            display: inline-block; /* For buttons and labels */
+        }
+
+        .settings-section .theme-button {
+            padding: 8px 15px;
+            border: 1px solid #007bff;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .settings-section .theme-button:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+
+        .settings-section .theme-button.active {
+            background-color: #28a745;
+            border-color: #28a745;
+            font-weight: bold;
+        }
+
+        .settings-section .game-mode-setting {
+            margin-bottom: 8px;
+        }
+
+        .settings-section .game-mode-setting label {
+            color: white;
+            cursor: pointer;
+        }
+
+        .settings-section .game-mode-setting input[type="checkbox"] {
+            margin-right: 5px;
+            transform: scale(1.2); /* Make checkbox slightly larger */
+        }
+
+    </style>
 </head>
 <body>
-  <button id="openSettings">Settings</button>
+    <div class="container">
+        <h1>Spy Game - Playing</h1>
+        <p>Lobby Code: <strong>{{ lobby_code }}</strong></p>
+        <p>Your Nickname: <strong>{{ nickname }}</p>
 
-  <!-- Two-column layout -->
-  <div class="game-container">
-    <!-- Main Game Content -->
-    <div class="game-main">
-      <h1>Spy Game</h1>
-      <p>Lobby: {{ lobby_code }} | Nickname: {{ nickname }}</p>
-
-      <!-- Scoreboard -->
-      <div id="scoreboard">
-        <h3>Scoreboard</h3>
-      </div>
-
-      <!-- Word Assignment -->
-      <div id="assignment">
-        <h2>Your Assignment</h2>
-        <p id="wordDisplay">Waiting for assignment...</p>
-      </div>
-
-      <!-- Description Section -->
-      <div id="description-section">
-        <h2>Enter your description</h2>
-        <textarea id="description-input" placeholder="Enter description here..."></textarea><br>
-        <button id="submit-description">Submit Description</button>
-        <p id="waiting-message"></p>
-      </div>
-
-      <!-- Submitted Descriptions -->
-      <div id="submitted-descriptions">
-        <h3>Submitted Descriptions</h3>
-      </div>
-
-      <!-- Voting Section -->
-      <div id="voting-section" style="display: none;">
-        <h2>Vote for the Spy</h2>
-        <form id="vote-form">
-          <div id="descriptions-list"></div>
-          <button type="submit">Submit Vote</button>
-        </form>
-      </div>
-
-      <!-- Host Controls -->
-      <div id="hostControls">
-        <button id="nextRoundButton" style="display: {% if is_host %}block{% else %}none{% endif %};">Next Round</button>
-      </div>
-
-      <!-- Message Box -->
-      <div id="message"></div>
-    </div>
-
-    <!-- Chat Sidebar -->
-    <div class="chat-sidebar">
-      <div id="chat-section">
-        <h2>Chat</h2>
-        <div id="chat-messages" class="chat-box"></div>
-        <div class="chat-input">
-          <input type="text" id="chat-input" placeholder="Type a message..." />
-          <button id="send-chat">Send</button>
+        <div id="your-assignment" class="game-info-box">
+            <h2>Your Role & Word:</h2>
+            <p id="assigned-role"></p>
+            <p id="assigned-word"></p>
         </div>
-      </div>
+
+        <div id="game-status" class="game-info-box">
+            <h2 id="current-describer-header"></h2>
+        </div>
+
+        <div class="game-sections-wrapper"> <!-- New wrapper for game sections -->
+            <!-- Section for submitting descriptions (visible when it's your turn) -->
+            <div id="description-section" class="game-section">
+                <h2>Submit Your Description</h2>
+                <p>Describe your word:</p>
+                <textarea id="description-input" rows="4" placeholder="Type your description here..."></textarea>
+                <button id="submit-description">Submit Description</button>
+            </div>
+
+            <!-- Section for voting (visible during voting phase) -->
+            <div id="voting-section" class="game-section" style="display: none;"> 
+                <h2>Vote to Eliminate</h2>
+                <p>Who do you think is the spy?</p>
+                <div id="players-to-vote">
+                    <!-- Voting buttons will be dynamically added here -->
+                </div>
+                <button id="submit-vote" disabled>Submit Vote</button>
+            </div>
+
+            <!-- Section for displaying descriptions (always visible) -->
+            <div id="descriptions-display-section" class="game-section">
+                <h2>Player Descriptions</h2>
+                <div id="descriptions-container">
+                    <p>Descriptions will appear here.</p>
+                </div>
+            </div>
+        </div> <!-- End of game-sections-wrapper -->
+
+        <!-- Player list (for scores and alive/eliminated status) -->
+        <div class="players-list">
+            <h2>Players</h2>
+            <div id="players-container">
+                <!-- Players will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div class="settings-section">
+            <h2>Settings</h2>
+            
+            <div class="theme-buttons-container">
+                <h3>Themes</h3>
+                <button class="theme-button active" id="defaultTheme">Default</button>
+                <button class="theme-button" id="purpleTheme">Purple</button>
+                <button class="theme-button" id="cyberpunkTheme">Cyberpunk</button>
+                <button class="theme-button" id="blueTheme">Blue</button>
+                <button class="theme-button" id="matrixTheme">Matrix</button>
+                <button class="theme-button" id="pinkTheme">Pink</button>
+            </div>
+
+            {% if is_host %}
+            <div class="game-mode-settings">
+                <h3>Game Mode Settings (Host Only)</h3>
+                <div class="game-mode-setting">
+                    <label>
+                        <input type="checkbox" id="setting-show-role"> Show Role After Elimination
+                    </label>
+                </div>
+                <div class="game-mode-setting">
+                    <label>
+                        <input type="checkbox" id="setting-dead-vote"> Dead Players Can Vote
+                    </label>
+                </div>
+                <div class="game-mode-setting">
+                    <label>
+                        <input type="checkbox" id="setting-animations"> Enable Animations
+                    </label>
+                </div>
+                <div class="game-mode-setting">
+                    <label>
+                        <input type="checkbox" id="setting-sound"> Enable Sound Effects
+                    </label>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <!-- End Settings Section -->
+
+        <!-- Host controls for next round -->
+        {% if is_host %}
+        <button id="next-round-button">Next Round</button>
+        {% endif %}
     </div>
-  </div>
 
-  <!-- Settings Modal -->
-  <div id="settingsModal" class="modal">
-    <div class="modal-content">
-      <span class="close-button" id="closeSettings">&times;</span>
-      <h2>Game Settings</h2>
-
-      <!-- Show Role Toggle -->
-      <div class="setting-item">
-        <label for="toggleShowRole">See when you are a spy:</label>
-        <label class="switch">
-          <input type="checkbox" id="toggleShowRole">
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <!-- Dead Vote Toggle -->
-      <div class="setting-item">
-        <label for="toggleDeadVote">Dead players can vote:</label>
-        <label class="switch">
-          <input type="checkbox" id="toggleDeadVote">
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <!-- Animations Toggle -->
-      <div class="setting-item">
-        <label for="toggleAnimations">Enable animations:</label>
-        <label class="switch">
-          <input type="checkbox" id="toggleAnimations">
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <!-- Sound Toggle -->
-      <div class="setting-item">
-        <label for="toggleSound">Enable sound effects:</label>
-        <label class="switch">
-          <input type="checkbox" id="toggleSound">
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <!-- Theme Selection -->
-      <div class="theme-selector">
-        <span>Theme:</span>
-        <button id="defaultTheme" class="theme-button active">Default</button>
-        <button id="purpleTheme" class="theme-button">Purple</button>
-        <button id="cyberpunkTheme" class="theme-button">Cyberpunk</button>
-        <button id="blueTheme" class="theme-button">Blue</button>
-        <button id="matrixTheme" class="theme-button">Matrix</button>
-        <button id="pinkTheme" class="theme-button">Pink</button>
-      </div>
-
-      <!-- Save Button -->
-      <button id="saveSettings">Save Settings</button>
+    <!-- The elimination reveal overlay -->
+    <div id="elimination-reveal-overlay">
+        <span id="emoji-cycler"></span>
+        <p id="reveal-text"></p>
+        <button id="close-animation-button">Close</button> <!-- New close button -->
     </div>
-  </div>
 
-  <!-- Script Section -->
-  <script>
-    var isHost = {{ 'true' if is_host else 'false' }};
-    var myNick = "{{ nickname }}";
-    var currentDescriber = "";
-    var socket = io();
-  
-    // Global client settings (defaults; will be updated by server)
-    var clientSettings = {
-      show_role: false,
-      dead_vote: false,
-      animations: true,
-      sound: true,
-      theme: 'style.css'
-    };
-  
-    // On connection, join lobby
-    socket.on('connect', function() {
-      console.log('Connected to socket in game page');
-      socket.emit('join_lobby');
-    });
-  
-    // Handle connection errors
-    socket.on('connect_error', function(err) {
-      console.error('Socket connection error:', err);
-    });
-  
-    // Update scoreboard
-    socket.on('update_players', function(data) {
-      var scoreboard = document.getElementById('scoreboard');
-      if (!scoreboard) return;
-      scoreboard.innerHTML = "<h3>Scoreboard</h3>";
-      data.players.forEach(function(player) {
-        scoreboard.innerHTML += "<p>" + player.nickname + ": " + player.points + " pts</p>";
-      });
-    });
-  
-    // Handle settings update
-    socket.on('settings_updated', function(data) {
-      clientSettings = data.settings;
-      const toggleShowRole = document.getElementById('toggleShowRole');
-      const toggleDeadVote = document.getElementById('toggleDeadVote');
-      const toggleAnimations = document.getElementById('toggleAnimations');
-      const toggleSound = document.getElementById('toggleSound');
-      
-      if (toggleShowRole) toggleShowRole.checked = clientSettings.show_role;
-      if (toggleDeadVote) toggleDeadVote.checked = clientSettings.dead_vote;
-      if (toggleAnimations) toggleAnimations.checked = clientSettings.animations;
-      if (toggleSound) toggleSound.checked = clientSettings.sound;
-    });
-  
-    // Word assignment display
-    socket.on('word_assignment', function(data) {
-      const wordDisplay = document.getElementById('wordDisplay');
-      if (!wordDisplay) return;
-      
-      if (clientSettings.show_role) {
-        wordDisplay.innerText = "Word: " + data.word + " (Role: " + data.role + ")";
-      } else {
-        wordDisplay.innerText = "Word: " + data.word;
-      }
-    });
-  
-    // Next describer handler
-    socket.on('next_describer', function(data) {
-      currentDescriber = data.describer;
-      const descriptionSection = document.getElementById('description-section');
-      const waitingMessage = document.getElementById('waiting-message');
-      
-      if (!descriptionSection || !waitingMessage) return;
-      
-      if (myNick === currentDescriber) {
-        descriptionSection.style.display = 'block';
-        waitingMessage.innerText = "It's your turn to describe.";
-      } else {
-        descriptionSection.style.display = 'none';
-        waitingMessage.innerText = "Waiting for " + currentDescriber + " to describe.";
-      }
-    });
-  
-    // Description submission
-    socket.on('description_submitted', function(data) {
-      const div = document.getElementById('submitted-descriptions');
-      if (!div) return;
-      
-      const para = document.createElement('p');
-      para.innerText = data.nickname + ": " + data.description;
-      div.appendChild(para);
-    });
-  
-    // Submit description button
-    document.getElementById('submit-description')?.addEventListener('click', function() {
-      const input = document.getElementById('description-input')?.value.trim();
-      if (!input) {
-        alert("Please enter a description.");
-        return;
-      }
-      socket.emit('submit_description', { description: input });
-      document.getElementById('description-input').value = "";
-    });
-  
-    // Handle received descriptions
-    socket.on('all_descriptions', function(data) {
-      const votingSection = document.getElementById('voting-section');
-      const listDiv = document.getElementById('descriptions-list');
-      
-      if (!votingSection || !listDiv) return;
-      
-      votingSection.style.display = 'block';
-      listDiv.innerHTML = "";
-      
-      data.descriptions.forEach(function(item, index) {
-        const radio = document.createElement('input');
-        radio.type = "radio";
-        radio.name = "vote";
-        radio.value = item.nickname;
-        radio.id = "vote_" + index;
-  
-        const label = document.createElement('label');
-        label.htmlFor = "vote_" + index;
-        label.innerText = item.nickname + ": " + item.description;
-  
-        listDiv.appendChild(radio);
-        listDiv.appendChild(label);
-        listDiv.appendChild(document.createElement('br'));
-      });
-      document.getElementById('message').innerText = "";
-    });
-  
-    // Vote form submission
-    document.getElementById('vote-form')?.addEventListener('submit', function(e) {
-      e.preventDefault();
-      const selected = document.querySelector('input[name="vote"]:checked');
-      if (!selected) {
-        alert("Please select a player to vote for.");
-        return;
-      }
-      socket.emit('submit_vote', { vote: selected.value });
-      document.getElementById('voting-section').style.display = 'none';
-      document.getElementById('message').innerText = "Vote submitted. Waiting for results...";
-    });
-  
-    // Player elimination
-    socket.on('player_eliminated', function(data) {
-      document.getElementById('message').innerText = data.nickname + " was eliminated! (Role: " + data.role + ")";
-    });
-  
-    // Round over
-    socket.on('round_over', function(data) {
-      document.getElementById('message').innerText = data.message;
-      if (isHost) {
-        document.getElementById('hostControls').style.display = 'block';
-      }
-    });
-  
-    // New round
-    socket.on('new_round', function(data) {
-      document.getElementById('message').innerText = data.message;
-      document.getElementById('voting-section').style.display = 'none';
-      document.getElementById('hostControls').style.display = 'none';
-      document.getElementById('submitted-descriptions').innerHTML = "<h3>Submitted Descriptions</h3>";
-    });
-  
-    // Vote failed
-    socket.on('vote_failed', function(data) {
-      document.getElementById('message').innerText = data.message;
-    });
-  
-    // Error handler
-    socket.on('error', function(data) {
-      alert(data.message);
-    });
-  
-    // Settings modal controls
-    const settingsModal = document.getElementById("settingsModal");
-    const openSettingsBtn = document.getElementById("openSettings");
-    const closeSettingsBtn = document.getElementById("closeSettings");
-  
-    openSettingsBtn?.addEventListener('click', () => {
-      settingsModal.style.display = "block";
-    });
-  
-    closeSettingsBtn?.addEventListener('click', () => {
-      settingsModal.style.display = "none";
-    });
-  
-    window.addEventListener('click', function(event) {
-      if (event.target === settingsModal) {
-        settingsModal.style.display = "none";
-      }
-    });
-  
-    // Theme switching functionality
-    document.getElementById('defaultTheme').addEventListener('click', function () {
-      setTheme('style.css');
-      setActiveThemeButton(this);
-    });
+    <script>
+        var socket = io();
+        var myNick = "{{ nickname }}";
+        var isHost = {{ 'true' if is_host else 'false' }};
+        var cyclingInterval;
+        var initialCyclingDelay = 50; // Milliseconds, starts fast
+        var speedDecreaseIncrement = 15; // Milliseconds to add to delay each cycle
+        var maxCyclingDelay = 500; // Max delay to reach, slower cycling
+        var cyclingDuration = 3000; // Total time for emoji cycling in milliseconds
 
-    document.getElementById('purpleTheme').addEventListener('click', function () {
-      setTheme('purple.css');
-      setActiveThemeButton(this);
-    });
+        // DOM elements
+        const assignedRoleEl = document.getElementById('assigned-role');
+        const assignedWordEl = document.getElementById('assigned-word');
+        const currentDescriberHeader = document.getElementById('current-describer-header');
+        const descriptionInput = document.getElementById('description-input');
+        const submitDescriptionBtn = document.getElementById('submit-description');
+        const descriptionsContainer = document.getElementById('descriptions-container');
+        const playersToVoteDiv = document.getElementById('players-to-vote');
+        const submitVoteBtn = document.getElementById('submit-vote');
+        const nextRoundButton = document.getElementById('next-round-button');
+        const eliminationRevealOverlay = document.getElementById('elimination-reveal-overlay');
+        const emojiCycler = document.getElementById('emoji-cycler');
+        const revealText = document.getElementById('reveal-text');
+        const closeAnimationButton = document.getElementById('close-animation-button'); // New element reference
 
-    document.getElementById('cyberpunkTheme').addEventListener('click', function () {
-      setTheme('cyberpunk.css');
-      setActiveThemeButton(this);
-    });
+        // Settings checkboxes (only if host)
+        const settingShowRole = document.getElementById('setting-show-role');
+        const settingDeadVote = document.getElementById('setting-dead-vote');
+        const settingAnimations = document.getElementById('setting-animations');
+        const settingSound = document.getElementById('setting-sound');
 
-    document.getElementById('blueTheme').addEventListener('click', function () {
-      setTheme('blue.css');
-      setActiveThemeButton(this);
-    });
 
-    document.getElementById('matrixTheme').addEventListener('click', function () {
-      setTheme('matrix.css');
-      setActiveThemeButton(this);
-    });
-  
-    document.getElementById('pinkTheme').addEventListener('click', function () {
-      setTheme('pink.css');
-      setActiveThemeButton(this);
-    });
+        let selectedVoteTarget = null; // Store the selected player for voting
 
-    // Set theme function
-    function setTheme(cssFile) {
-      const link = document.getElementById('theme-stylesheet');
-      if (!link) return;
-      
-      link.href = "{{ url_for('static', filename='css/') }}" + cssFile;
-      localStorage.setItem('preferredTheme', cssFile);
-      clientSettings.theme = cssFile;
-    }
-  
-    // Update active theme button
-    function updateActiveThemeButton(activeId) {
-      document.querySelectorAll('.theme-button').forEach(button => {
-        button.classList.remove('active');
-      });
-      const activeButton = document.getElementById(activeId);
-      if (activeButton) activeButton.classList.add('active');
-    }
-  
-    // Apply saved theme
-    document.addEventListener('DOMContentLoaded', function() {
-      const savedTheme = localStorage.getItem('preferredTheme');
-      if (savedTheme) {
-        setTheme(savedTheme);
-        updateActiveThemeButton(savedTheme === 'purple.css' ? 'purpleTheme' : 'defaultTheme');
-      }
-    });
-  
-    // Settings save
-    if (!isHost) {
-      document.getElementById('toggleShowRole')?.setAttribute('disabled', 'disabled');
-      document.getElementById('toggleDeadVote')?.setAttribute('disabled', 'disabled');
-      document.getElementById('toggleAnimations')?.setAttribute('disabled', 'disabled');
-      document.getElementById('toggleSound')?.setAttribute('disabled', 'disabled');
-      document.getElementById('saveSettings')?.setAttribute('disabled', 'disabled');
-    }
-  
-    document.getElementById('saveSettings')?.addEventListener('click', function() {
-      const newSettings = {
-        show_role: document.getElementById('toggleShowRole')?.checked || false,
-        dead_vote: document.getElementById('toggleDeadVote')?.checked || false,
-        animations: document.getElementById('toggleAnimations')?.checked || false,
-        sound: document.getElementById('toggleSound')?.checked || false,
-        theme: clientSettings.theme
-      };
-      clientSettings = newSettings;
-      if (isHost) {
-        socket.emit('update_settings', newSettings);
-      }
-      settingsModal.style.display = "none";
-    });
-  
-    // Next round button
-    document.getElementById('nextRoundButton')?.addEventListener('click', function() {
-      socket.emit('next_round');
-      document.getElementById('hostControls').style.display = 'none';
-    });
-  
-    // ✅ CHAT FUNCTIONALITY STARTS HERE ✅
-    document.addEventListener('DOMContentLoaded', function () {
-      // Send chat message
-      const sendButton = document.getElementById('send-chat');
-      const chatInput = document.getElementById('chat-input');
-  
-      if (sendButton && chatInput) {
-        sendButton.addEventListener('click', function () {
-          const message = chatInput.value.trim();
-          if (message) {
-            socket.emit('send_chat', { message: message });
-            chatInput.value = '';
-          }
+        socket.on('connect', function() {
+            socket.emit('join_lobby');
         });
-  
-        chatInput.addEventListener('keypress', function (e) {
-          if (e.key === 'Enter') {
-            sendButton.click();
-          }
+
+        // --- Game Flow Events ---
+
+        socket.on('word_assignment', function(data) {
+            assignedRoleEl.innerText = 'Role: ' + data.role.charAt(0).toUpperCase() + data.role.slice(1);
+            assignedWordEl.innerText = 'Word: ' + data.word;
+            document.getElementById('your-assignment').classList.add('fade-in');
         });
-      }
-  
-      // Receive chat message
-      socket.on('receive_chat', function (data) {
-        const chatBox = document.getElementById('chat-messages');
-        if (!chatBox) return;
-  
-        const messageEl = document.createElement('p');
-        messageEl.innerHTML = `<strong>${data.nickname}</strong> <small>(${data.timestamp})</small>: ${data.message}`;
-  
-        // Highlight own messages
-        if (data.nickname === myNick) {
-          messageEl.style.color = "#00ffaa";
+
+        socket.on('next_describer', function(data) {
+            currentDescriberHeader.innerHTML = `It's <span style="color: #FFD700;">${data.describer}</span>'s turn to describe!`;
+            if (data.describer === myNick) {
+                descriptionInput.removeAttribute('disabled');
+                submitDescriptionBtn.removeAttribute('disabled');
+                descriptionInput.focus();
+                document.getElementById('description-section').style.display = 'block'; // Show description input
+            } else {
+                descriptionInput.setAttribute('disabled', 'true');
+                submitDescriptionBtn.setAttribute('disabled', 'true');
+                document.getElementById('description-section').style.display = 'none'; // Hide description input
+            }
+            
+            document.getElementById('voting-section').style.display = 'none'; // Hide voting section
+            // Ensure selectedVoteTarget and active vote styling are reset for new description phase
+            if (selectedVoteTarget) {
+                const prevSelectedBtn = document.querySelector(`.vote-button[data-nickname="${selectedVoteTarget}"]`);
+                if (prevSelectedBtn) prevSelectedBtn.classList.remove('active-vote');
+            }
+            playersToVoteDiv.innerHTML = ''; // Clear previous vote buttons
+            submitVoteBtn.setAttribute('disabled', 'true'); // Disable vote button at start of description phase
+            submitVoteBtn.style.display = 'none'; // Hide submit vote button when starting description phase
+            selectedVoteTarget = null; // Reset vote target
+            closeAnimationButton.style.display = 'none'; // Hide close button for animation overlay
+        });
+
+        socket.on('description_submitted', function(data) {
+            const descriptionItem = document.createElement('div');
+            descriptionItem.className = 'description-item fade-in';
+            descriptionItem.innerHTML = `<strong>${data.nickname}:</strong> ${data.description}`;
+            descriptionsContainer.appendChild(descriptionItem);
+            descriptionsContainer.scrollTop = descriptionsContainer.scrollHeight;
+        });
+
+        socket.on('all_descriptions', function(data) {
+            // Hide description input section and show voting section
+            document.getElementById('description-section').style.display = 'none';
+            document.getElementById('voting-section').style.display = 'block'; // Show voting section
+            submitVoteBtn.style.display = 'block'; // Show submit vote button when voting starts
+
+            // Clear previous descriptions and re-populate the complete set
+            descriptionsContainer.innerHTML = ''; 
+            data.descriptions.forEach(function(desc) {
+                const descriptionItem = document.createElement('div');
+                descriptionItem.className = 'description-item fade-in';
+                descriptionItem.innerHTML = `<strong>${desc.nickname}:</strong> ${desc.description}`;
+                descriptionsContainer.appendChild(descriptionItem);
+            });
+            descriptionsContainer.scrollTop = descriptionsContainer.scrollHeight;
+
+            // Populate voting buttons with current players from the new 'votable_players' data
+            playersToVoteDiv.innerHTML = ''; // Clear previous buttons before populating
+            console.log("Votable players received:", data.votable_players); // Debugging: Check received data
+            data.votable_players.forEach(function(player) { // Loop through votable_players
+                const voteButton = document.createElement('button');
+                voteButton.className = 'vote-button';
+                voteButton.innerText = player.nickname;
+                voteButton.dataset.nickname = player.nickname;
+                voteButton.addEventListener('click', function() {
+                    // Deselect previous
+                    if (selectedVoteTarget) {
+                        const prevSelectedBtn = document.querySelector(`.vote-button[data-nickname="${selectedVoteTarget}"]`);
+                        if (prevSelectedBtn) prevSelectedBtn.classList.remove('active-vote');
+                    }
+                    // Select new
+                    this.classList.add('active-vote');
+                    selectedVoteTarget = this.dataset.nickname;
+                    submitVoteBtn.removeAttribute('disabled'); // Enable submit vote button
+                });
+                playersToVoteDiv.appendChild(voteButton);
+            });
+            currentDescriberHeader.innerText = "Time to vote!";
+        });
+        
+        socket.on('player_eliminated', function(data) {
+            startEliminationAnimation();
+        });
+
+        socket.on('round_over', function(data) {
+            stopEliminationAnimation();
+            let finalMessage;
+            if (data.eliminated_role === 'spy') {
+                finalMessage = `${data.eliminated_name} WAS THE SPY! 🎉\n\nNormal team wins!\nSpy word was: ${data.spy_word}\nCitizen word was: ${data.normal_word}\nActual Spy: ${data.actual_spy_nickname}`;
+                emojiCycler.innerText = '🕵️'; // Ensure spy emoji is shown at the end
+            } else {
+                finalMessage = `${data.eliminated_name} was NOT the spy! 😔\n\nSpy team wins!\nSpy word was: ${data.spy_word}\nCitizen word was: ${data.normal_word}\nActual Spy: ${data.actual_spy_nickname}`;
+                emojiCycler.innerText = '🧑'; // Ensure citizen emoji is shown at the end
+            }
+            revealText.innerText = finalMessage;
+            revealText.style.opacity = 1; // Fade in text
+            closeAnimationButton.style.display = 'block'; // Show close button after animation stops
+
+            // Show next round button for host
+            if (isHost) {
+                nextRoundButton.style.display = 'block';
+            }
+        });
+
+        socket.on('vote_failed', function(data) {
+            stopEliminationAnimation();
+            const message = `${data.eliminated_name} was NOT the spy!\n\nSearch further! 🧐`;
+            revealText.innerText = message;
+            revealText.style.opacity = 1; // Fade in text
+            emojiCycler.innerText = '🧑'; // Ensure citizen emoji is shown at the end (because they were not the spy)
+            closeAnimationButton.style.display = 'block'; // Show close button after animation stops
+
+
+            // Re-enable description input for next phase of current round
+            descriptionInput.removeAttribute('disabled');
+            submitDescriptionBtn.removeAttribute('disabled');
+            document.getElementById('description-section').style.display = 'block';
+            document.getElementById('voting-section').style.display = 'none';
+            // Hide next round button as game continues
+            nextRoundButton.style.display = 'none';
+        });
+
+        // Handle game end and return to lobby (e.g., if host disconnects or no players left)
+        socket.on('game_ended_return_to_lobby', function() {
+            showCustomModal('Game Over', 'The game has ended. Returning to the lobby.', function() {
+                window.location.href = '/lobby/' + '{{ lobby_code }}';
+            });
+        });
+
+
+        // --- Player List & Chat ---
+
+        socket.on('update_players', function(data) {
+            console.log("update_players received:", data.players); 
+            var container = document.getElementById('players-container');
+            container.innerHTML = '';
+            
+            data.players.forEach(function(player) {
+                var playerItem = document.createElement('div');
+                playerItem.className = 'player-item';
+                playerItem.dataset.nickname = player.nickname;
+
+                var nameSpan = document.createElement('span');
+                nameSpan.innerText = player.nickname + (player.points > 0 ? ' (' + player.points + ' pts)' : '');
+                playerItem.appendChild(nameSpan);
+
+                if (player.alive === false) { 
+                    playerItem.classList.add('eliminated');
+                    const statusSpan = document.createElement('span');
+                    statusSpan.innerText = ' (Eliminated)';
+                    statusSpan.style.color = '#888';
+                    playerItem.appendChild(statusSpan);
+                }
+                
+                container.appendChild(playerItem);
+            });
+        });
+
+        socket.on('receive_chat', function (data) {
+            const chatBox = document.getElementById('chat-messages'); 
+            if (chatBox) { 
+                const messageEl = document.createElement('p');
+                messageEl.innerHTML = `<strong>${data.nickname}</strong> <small>(${data.timestamp})</small>: ${data.message}`;
+                chatBox.appendChild(messageEl);
+                chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
+            }
+        });
+
+        // --- Button Handlers ---
+
+        submitDescriptionBtn.addEventListener('click', function() {
+            const description = descriptionInput.value.trim();
+            if (description) {
+                socket.emit('submit_description', { description: description });
+                descriptionInput.value = '';
+                submitDescriptionBtn.setAttribute('disabled', 'true');
+            }
+        });
+
+        submitVoteBtn.addEventListener('click', function() {
+            if (selectedVoteTarget) {
+                socket.emit('submit_vote', { vote: selectedVoteTarget });
+                submitVoteBtn.setAttribute('disabled', 'true');
+                document.querySelectorAll('.vote-button').forEach(btn => btn.setAttribute('disabled', 'true'));
+            } else {
+                showCustomModal('Voting Error', 'Please select a player to vote for.');
+            }
+        });
+
+        if (isHost && nextRoundButton) {
+            nextRoundButton.addEventListener('click', function() {
+                socket.emit('next_round');
+                nextRoundButton.style.display = 'none'; // Hide button after click
+                eliminationRevealOverlay.classList.remove('show'); // Hide overlay for new round
+                revealText.style.opacity = 0; // Hide text
+                emojiCycler.innerText = ''; // Clear emoji
+                descriptionsContainer.innerHTML = ''; // Clear descriptions for a new round
+                closeAnimationButton.style.display = 'none'; // Hide close button for animation overlay
+            });
         }
-  
-        chatBox.appendChild(messageEl);
-        chatBox.scrollTop = chatBox.scrollHeight;
-      });
-    });
-  </script>
+        
+        // --- Custom Modal Function (replaces alert/confirm) ---
+        function showCustomModal(title, message, callback = null) {
+            const existingModal = document.getElementById('custom-modal-overlay');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            const modalOverlay = document.createElement('div');
+            modalOverlay.id = 'custom-modal-overlay';
+            modalOverlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 2000;
+            `;
+
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background-color: #2a2a2a;
+                color: white;
+                padding: 25px;
+                border-radius: 8px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+                max-width: 400px;
+                text-align: center;
+                animation: scaleIn 0.3s ease-out;
+            `;
+
+            const modalTitle = document.createElement('h3');
+            modalTitle.innerText = title;
+            modalTitle.style.marginBottom = '15px';
+            modalTitle.style.color = '#FFD700';
+
+            const modalMessage = document.createElement('p');
+            modalMessage.innerText = message;
+            modalMessage.style.marginBottom = '20px';
+
+            const closeButton = document.createElement('button');
+            closeButton.innerText = 'OK';
+            closeButton.style.cssText = `
+                padding: 10px 20px;
+                background-color: #c40000;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+            `;
+            closeButton.onmouseover = () => closeButton.style.backgroundColor = '#ff0000';
+            closeButton.onmouseout = () => closeButton.style.backgroundColor = '#c40000';
+            closeButton.onclick = () => {
+                modalOverlay.remove();
+                if (callback) callback();
+            };
+
+            modalContent.appendChild(modalTitle);
+            modalContent.appendChild(modalMessage);
+            modalContent.appendChild(closeButton);
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+
+            const style = document.createElement('style');
+            style.innerHTML = `
+                @keyframes scaleIn {
+                    from { transform: scale(0.8); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // --- Elimination Animation Logic ---
+        function startEliminationAnimation() {
+            eliminationRevealOverlay.classList.add('show');
+            emojiCycler.innerText = '🕵️'; // Start with spy emoji
+            revealText.style.opacity = 0; // Ensure text is hidden initially
+            closeAnimationButton.style.display = 'none'; // Hide close button while animation is running
+
+            let currentEmojiIndex = 0;
+            const emojis = ['🕵️', '🧑'];
+            let currentDelay = initialCyclingDelay;
+            let timeElapsed = 0;
+
+            function cycleEmoji() {
+                emojiCycler.innerText = emojis[currentEmojiIndex];
+                currentEmojiIndex = (currentEmojiIndex + 1) % emojis.length;
+                
+                timeElapsed += currentDelay;
+
+                if (timeElapsed < cyclingDuration) {
+                    currentDelay = Math.min(maxCyclingDelay, currentDelay + speedDecreaseIncrement);
+                    cyclingInterval = setTimeout(cycleEmoji, currentDelay);
+                } else {
+                    stopEliminationAnimation(); 
+                    closeAnimationButton.style.display = 'block'; // Show close button after animation stops naturally
+                }
+            }
+            cyclingInterval = setTimeout(cycleEmoji, currentDelay);
+        }
+
+        function stopEliminationAnimation() {
+            clearTimeout(cyclingInterval);
+        }
+
+        // Event listener for the new close animation button
+        closeAnimationButton.addEventListener('click', function() {
+            eliminationRevealOverlay.classList.remove('show'); // Hide the overlay
+            revealText.style.opacity = 0; // Hide the text
+            emojiCycler.innerText = ''; // Clear the emoji
+            closeAnimationButton.style.display = 'none'; // Hide itself
+            
+            // If the vote failed, re-enable description input for next phase of current round
+            // This logic is duplicated from vote_failed, ensure it's safe to call here.
+            // A better approach might be to have a central function that 'resets' the game state for a new description phase.
+            // For now, this ensures the UI returns to the correct state after manual close.
+            if (document.getElementById('voting-section').style.display === 'none') { // Check if we were in voting phase
+                descriptionInput.removeAttribute('disabled');
+                submitDescriptionBtn.removeAttribute('disabled');
+                document.getElementById('description-section').style.display = 'block';
+            }
+        });
+
+
+        // --- Theme Switching ---
+        document.getElementById('defaultTheme').addEventListener('click', function () {
+            setTheme('style.css');
+            setActiveThemeButton(this);
+        });
+
+        document.getElementById('purpleTheme').addEventListener('click', function () {
+            setTheme('purple.css');
+            setActiveThemeButton(this);
+        });
+
+        document.getElementById('cyberpunkTheme').addEventListener('click', function () {
+            setTheme('cyberpunk.css');
+            setActiveThemeButton(this);
+        });
+
+        document.getElementById('blueTheme').addEventListener('click', function () {
+            setTheme('blue.css');
+            setActiveThemeButton(this);
+        });
+
+        document.getElementById('matrixTheme').addEventListener('click', function () {
+            setTheme('matrix.css');
+            setActiveThemeButton(this);
+        });
+
+        document.getElementById('pinkTheme').addEventListener('click', function () {
+            setTheme('pink.css');
+            setActiveThemeButton(this);
+        });
+
+        function setTheme(cssFile) {
+            let link = document.getElementById('theme-stylesheet');
+            link.href = "{{ url_for('static', filename='css/') }}" + cssFile;
+            localStorage.setItem('preferredTheme', cssFile);
+        }
+
+        function setActiveThemeButton(activeButton) {
+            document.querySelectorAll('.theme-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            activeButton.classList.add('active');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('preferredTheme');
+            if (savedTheme) {
+                setTheme(savedTheme);
+                const themeButtonMap = {
+                    'style.css': 'defaultTheme',
+                    'purple.css': 'purpleTheme',
+                    'cyberpunk.css': 'cyberpunkTheme',
+                    'blue.css': 'blueTheme',
+                    'matrix.css': 'matrixTheme',
+                    'pink.css': 'pinkTheme'
+                };
+                const buttonId = themeButtonMap[savedTheme] || 'defaultTheme';
+                const button = document.getElementById(buttonId);
+                if (button) {
+                    setActiveThemeButton(button);
+                } else {
+                    setActiveThemeButton(document.getElementById('defaultTheme'));
+                }
+            } else {
+                setActiveThemeButton(document.getElementById('defaultTheme'));
+            }
+        });
+
+        // --- Game Mode Settings Logic ---
+        if (isHost) {
+            // Event Listeners for Game Mode Settings
+            if (settingShowRole) {
+                settingShowRole.addEventListener('change', function() {
+                    socket.emit('update_settings', {'show_role': this.checked});
+                });
+            }
+            if (settingDeadVote) {
+                settingDeadVote.addEventListener('change', function() {
+                    socket.emit('update_settings', {'dead_vote': this.checked});
+                });
+            }
+            if (settingAnimations) {
+                settingAnimations.addEventListener('change', function() {
+                    socket.emit('update_settings', {'animations': this.checked});
+                });
+            }
+            if (settingSound) {
+                settingSound.addEventListener('change', function() {
+                    socket.emit('update_settings', {'sound': this.checked});
+                });
+            }
+        }
+
+        // Listener for settings updates from the server
+        socket.on('settings_updated', function(data) {
+            if (isHost) { // Update host's checkboxes
+                if (settingShowRole) settingShowRole.checked = data.settings.show_role;
+                if (settingDeadVote) settingDeadVote.checked = data.settings.dead_vote;
+                if (settingAnimations) settingAnimations.checked = data.settings.animations;
+                if (settingSound) settingSound.checked = data.settings.sound;
+            }
+            // Add client-side effects for settings here if needed
+            // e.g., if (!data.settings.animations) disable animations.
+        });
+
+    </script>
 </body>
 </html>

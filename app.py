@@ -3,6 +3,7 @@ from flask_socketio import SocketIO, join_room, emit, disconnect
 import random
 import string
 from datetime import datetime
+import ast # To safely evaluate string literals as Python tuples
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_here'
@@ -10,731 +11,59 @@ socketio = SocketIO(app, async_mode='threading')
 
 # Global storage for lobbies.
 # Each lobby holds:
-#   - 'host': host nickname
-#   - 'players': {socket_id: {'nickname': ..., 'alive': True, 'points': int}}
-#   - 'state': 'lobby', 'game', 'waiting_for_next_round', or 'ended'
-#   - 'current_word_pair': chosen word pair (tuple)
-#   - 'assignments': {nickname: {'word': ..., 'role': 'spy' or 'normal'}}
-#   - 'descriptions': {nickname: description}
-#   - 'votes': {nickname: voted_nickname}
-#   - 'settings': { 'show_role': bool, 'dead_vote': bool, 'animations': bool, 'sound': bool }
-#   - 'description_order': list of nicknames in order for describing
-#   - 'current_descr_index': index in description_order for whose turn it is
+#   - 'host': host nickname
+#   - 'players': {socket_id: {'nickname': ..., 'alive': True, 'points': int}}
+#   - 'state': 'lobby', 'game', 'waiting_for_next_round', or 'ended'
+#   - 'current_word_pair': chosen word pair (tuple)
+#   - 'assignments': {nickname: {'word': ..., 'role': 'spy' or 'normal'}}
+#   - 'descriptions': {nickname: description}
+#   - 'votes': {nickname: voted_nickname}
+#   - 'settings': { 'show_role': bool, 'dead_vote': bool, 'animations': bool, 'sound': bool }
+#   - 'description_order': list of nicknames in order for describing
+#   - 'current_descr_index': index in description_order for whose turn it is
 lobbies = {}
 
-# Hardcoded word pairs (first word for normal players, second for spy).
-word_pairs = [
-    # ---------------------------
-    # Original List
-    # ---------------------------
-    # Same-Category Pairs (160 lines):
+# List to store word pairs, loaded from words.txt
+word_pairs = []
 
-    # Vehicles (15)
-    ('motorcycle', 'bicycle'),
-    ('bus', 'tram'),
-    ('taxi', 'van'),
-    ('truck', 'pickup'),
-    ('helicopter', 'jet'),
-    ('scooter', 'minivan'),
-    ('boat', 'ferry'),
-    ('submarine', 'sailboat'),
-    ('convertible', 'coupe'),
-    ('roadster', 'limousine'),
-    ('SUV', 'tractor'),
-    ('blimp', 'airship'),
-    ('dune buggy', 'racer'),
-    ('segway', 'go-kart'),
-    ('rickshaw', 'tricycle'),
+def load_word_pairs(filename="words.txt"):
+    """Loads word pairs from a text file, ignoring comments and empty lines.
+    Handles lines with or without a trailing comma after the tuple."""
+    loaded_pairs = []
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                # Skip empty lines and comment lines
+                if line and not line.startswith('#'):
+                    try:
+                        # Safely evaluate the string as a Python literal
+                        evaluated_item = ast.literal_eval(line)
+                        
+                        # Case 1: Directly parsed as a (str, str) tuple, e.g., "('word1', 'word2')"
+                        if isinstance(evaluated_item, tuple) and len(evaluated_item) == 2 and \
+                           isinstance(evaluated_item[0], str) and isinstance(evaluated_item[1], str):
+                            loaded_pairs.append(evaluated_item)
+                        
+                        # Case 2: Parsed as a single-element tuple containing the (str, str) tuple,
+                        # due to a trailing comma in the file, e.g., "('word1', 'word2'),"
+                        elif isinstance(evaluated_item, tuple) and len(evaluated_item) == 1 and \
+                             isinstance(evaluated_item[0], tuple) and len(evaluated_item[0]) == 2 and \
+                             isinstance(evaluated_item[0][0], str) and isinstance(evaluated_item[0][1], str):
+                            loaded_pairs.append(evaluated_item[0])
+                        else:
+                            print(f"Warning: Skipping malformed or unexpected format in {filename}: {line}")
+                    except (ValueError, SyntaxError) as e:
+                        print(f"Error parsing line in {filename}: {line} - {e}")
+    except FileNotFoundError:
+        print(f"Error: {filename} not found. Please create it with word pairs.")
+    return loaded_pairs
 
-    # Beverages (15)
-    ('espresso', 'cappuccino'),
-    ('latte', 'mocha'),
-    ('smoothie', 'milkshake'),
-    ('lemonade', 'iced tea'),
-    ('beer', 'wine'),
-    ('soda', 'juice'),
-    ('water', 'sparkling water'),
-    ('cocktail', 'margarita'),
-    ('whiskey', 'vodka'),
-    ('iced coffee', 'affogato'),
-    ('frappuccino', 'macchiato'),
-    ('hot chocolate', 'chai'),
-    ('kombucha', 'ginger beer'),
-    ('cider', 'mead'),
-    ('matcha', 'oolong'),
+# Load word pairs when the application starts
+word_pairs = load_word_pairs()
+if not word_pairs:
+    print("No word pairs loaded. The game might not function correctly.")
 
-    # Fruits (15)
-    ('banana', 'apple'),
-    ('mango', 'papaya'),
-    ('strawberry', 'blueberry'),
-    ('pear', 'peach'),
-    ('grape', 'cherry'),
-    ('watermelon', 'cantaloupe'),
-    ('kiwi', 'lime'),
-    ('pineapple', 'coconut'),
-    ('apricot', 'plum'),
-    ('raspberry', 'blackberry'),
-    ('pomegranate', 'cranberry'),
-    ('mandarin', 'tangerine'),
-    ('fig', 'date'),
-    ('guava', 'lychee'),
-    ('dragonfruit', 'passionfruit'),
-
-    # Colors (15)
-    ('red', 'blue'),
-    ('green', 'yellow'),
-    ('purple', 'pink'),
-    ('black', 'white'),
-    ('brown', 'beige'),
-    ('gray', 'silver'),
-    ('violet', 'indigo'),
-    ('magenta', 'cyan'),
-    ('turquoise', 'teal'),
-    ('maroon', 'burgundy'),
-    ('olive', 'lime'),
-    ('navy', 'sky blue'),
-    ('scarlet', 'crimson'),
-    ('amber', 'gold'),
-    ('emerald', 'jade'),
-
-    # Animals (15)
-    ('cat', 'dog'),
-    ('lion', 'tiger'),
-    ('elephant', 'rhinoceros'),
-    ('giraffe', 'zebra'),
-    ('bear', 'wolf'),
-    ('fox', 'coyote'),
-    ('rabbit', 'squirrel'),
-    ('horse', 'donkey'),
-    ('monkey', 'ape'),
-    ('panda', 'koala'),
-    ('kangaroo', 'wallaby'),
-    ('dolphin', 'whale'),
-    ('shark', 'stingray'),
-    ('penguin', 'seal'),
-    ('crocodile', 'alligator'),
-
-    # Countries (10)
-    ('USA', 'Canada'),
-    ('UK', 'France'),
-    ('Germany', 'Italy'),
-    ('Spain', 'Portugal'),
-    ('China', 'Japan'),
-    ('Brazil', 'Argentina'),
-    ('India', 'Pakistan'),
-    ('Russia', 'Ukraine'),
-    ('Australia', 'New Zealand'),
-    ('Egypt', 'South Africa'),
-
-    # Sports (10)
-    ('soccer', 'basketball'),
-    ('tennis', 'badminton'),
-    ('baseball', 'football'),
-    ('cricket', 'rugby'),
-    ('golf', 'cycling'),
-    ('hockey', 'volleyball'),
-    ('swimming', 'diving'),
-    ('boxing', 'wrestling'),
-    ('skiing', 'snowboarding'),
-    ('skating', 'rollerblading'),
-
-    # Musical Instruments (10)
-    ('guitar', 'bass'),
-    ('piano', 'organ'),
-    ('drums', 'cymbals'),
-    ('violin', 'cello'),
-    ('flute', 'clarinet'),
-    ('saxophone', 'trumpet'),
-    ('harp', 'mandolin'),
-    ('banjo', 'ukulele'),
-    ('harmonica', 'accordion'),
-    ('synthesizer', 'keyboard'),
-
-    # Clothing (10)
-    ('shirt', 'pants'),
-    ('jacket', 'coat'),
-    ('dress', 'skirt'),
-    ('hat', 'scarf'),
-    ('gloves', 'socks'),
-    ('shoes', 'boots'),
-    ('tie', 'belt'),
-    ('sweater', 'hoodie'),
-    ('shorts', 'leggings'),
-    ('suit', 'blazer'),
-
-    # Professions (10)
-    ('doctor', 'nurse'),
-    ('teacher', 'professor'),
-    ('engineer', 'architect'),
-    ('lawyer', 'judge'),
-    ('chef', 'baker'),
-    ('pilot', 'flight attendant'),
-    ('artist', 'designer'),
-    ('writer', 'poet'),
-    ('musician', 'composer'),
-    ('scientist', 'researcher'),
-
-    # Technology (10)
-    ('computer', 'laptop'),
-    ('smartphone', 'tablet'),
-    ('printer', 'scanner'),
-    ('router', 'modem'),
-    ('keyboard', 'mouse'),
-    ('monitor', 'television'),
-    ('camera', 'drone'),
-    ('headphones', 'speaker'),
-    ('smartwatch', 'fitness tracker'),
-    ('microphone', 'amplifier'),
-
-    # Flowers (10)
-    ('rose', 'lily'),
-    ('daisy', 'tulip'),
-    ('orchid', 'sunflower'),
-    ('daffodil', 'marigold'),
-    ('violet', 'peony'),
-    ('carnation', 'gerbera'),
-    ('hyacinth', 'iris'),
-    ('poppy', 'anemone'),
-    ('zinnia', 'cosmos'),
-    ('chrysanthemum', 'freesia'),
-
-    # Trees (10)
-    ('oak', 'maple'),
-    ('pine', 'cedar'),
-    ('birch', 'spruce'),
-    ('willow', 'poplar'),
-    ('sequoia', 'redwood'),
-    ('cherry', 'apple tree'),
-    ('ash', 'elm'),
-    ('fir', 'larch'),
-    ('sycamore', 'baobab'),
-    ('cypress', 'magnolia'),
-
-    # Foods (5)
-    ('bread', 'butter'),
-    ('cheese', 'yogurt'),
-    ('pasta', 'rice'),
-    ('soup', 'salad'),
-    ('steak', 'egg'),
-
-    # Completely Mismatching Pairs (20 lines):
-    ('cat', 'laptop'),
-    ('apple', 'hammer'),
-    ('soccer', 'piano'),
-    ('tree', 'phone'),
-    ('shirt', 'giraffe'),
-    ('river', 'clock'),
-    ('coffee', 'engineer'),
-    ('sunflower', 'airplane'),
-    ('ocean', 'keyboard'),
-    ('mountain', 'burger'),
-    ('rain', 'suitcase'),
-    ('ice', 'violin'),
-    ('candle', 'soccer'),
-    ('jacket', 'rocket'),
-    ('island', 'toothbrush'),
-    ('desert', 'microphone'),
-    ('butterfly', 'printer'),
-    ('coffee', 'telescope'),
-    ('lizard', 'sandwich'),
-    ('bicycle', 'novel'),
-
-    # Not-So-Close Related Pairs (20 lines):
-    ('coffee', 'morning'),
-    ('book', 'lamp'),
-    ('rain', 'window'),
-    ('music', 'memory'),
-    ('shadow', 'time'),
-    ('smile', 'sunset'),
-    ('fire', 'desire'),
-    ('ocean', 'echo'),
-    ('forest', 'whisper'),
-    ('mountain', 'silence'),
-    ('river', 'journey'),
-    ('storm', 'canvas'),
-    ('breeze', 'secret'),
-    ('mirror', 'dream'),
-    ('desert', 'mystery'),
-    ('clock', 'memory'),
-    ('flame', 'passion'),
-    ('window', 'perspective'),
-    ('pen', 'thought'),
-    ('silence', 'harmony'),
-
-    # ---------------------------
-    # First Alternative List
-    # ---------------------------
-    # Same-Category Pairs (new words):
-
-    # Vehicles (15)
-    ('sedan', 'hatchback'),
-    ('station wagon', 'crossover'),
-    ('ambulance', 'fire truck'),
-    ('motorhome', 'RV'),
-    ('minibus', 'coach'),
-    ('subway', 'light rail'),
-    ('kayak', 'canoe'),
-    ('rowboat', 'dinghy'),
-    ('glider', 'hang glider'),
-    ('electric car', 'hybrid car'),
-    ('monorail', 'trolley'),
-    ('tour bus', 'double-decker'),
-    ('sportscar', 'muscle car'),
-    ('barge', 'tugboat'),
-    ('compact car', 'subcompact car'),
-
-    # Beverages (15)
-    ('drip coffee', 'instant coffee'),
-    ('black tea', 'herbal tea'),
-    ('apple juice', 'cranberry juice'),
-    ('lemonade', 'limeade'),
-    ('soda', 'pop'),
-    ('milk', 'chocolate milk'),
-    ('vanilla latte', 'cinnamon latte'),
-    ('berry smoothie', 'tropical smoothie'),
-    ('cappuccino', 'flat white'),
-    ('iced herbal tea', 'iced fruit tea'),
-    ('sparkling water', 'seltzer water'),
-    ('fruit punch', 'lemon punch'),
-    ('cherry soda', 'grape soda'),
-    ('hot cider', 'mulled cider'),
-    ('power drink', 'refresher'),
-
-    # Fruits (15)
-    ('nectarine', 'persimmon'),
-    ('grapefruit', 'clementine'),
-    ('avocado', 'olive'),
-    ('elderberry', 'gooseberry'),
-    ('blackcurrant', 'redcurrant'),
-    ('banana', 'plantain'),
-    ('pawpaw', 'sapote'),
-    ('loquat', 'kumquat'),
-    ('prune', 'raisin'),
-    ('quince', 'medlar'),
-    ('mangosteen', 'rambutan'),
-    ('sugar apple', 'custard apple'),
-    ('white peach', 'yellow peach'),
-    ('blood orange', 'navel orange'),
-    ('red grape', 'green grape'),
-
-    # Colors (15)
-    ('cobalt', 'cerulean'),
-    ('sage', 'pistachio'),
-    ('bubblegum', 'candy floss'),
-    ('banana', 'grape'),
-    ('ocean', 'forest'),
-    ('smoke', 'ash'),
-    ('pearl', 'ivory'),
-    ('rust', 'sand'),
-    ('copper', 'brass'),
-    ('dusk', 'dawn'),
-    ('sky', 'cloud'),
-    ('berry', 'cocoa'),
-    ('flame', 'ember'),
-    ('mocha', 'latte'),
-    ('ice', 'frost'),
-
-    # Animals (15)
-    ('puppy', 'kitten'),
-    ('goldfish', 'guppy'),
-    ('iguana', 'chameleon'),
-    ('swan', 'duck'),
-    ('rooster', 'hen'),
-    ('ferret', 'weasel'),
-    ('hedgehog', 'porcupine'),
-    ('vulture', 'condor'),
-    ('stallion', 'mare'),
-    ('calf', 'foal'),
-    ('chicken', 'turkey'),
-    ('crow', 'raven'),
-    ('budgie', 'parakeet'),
-    ('snail', 'slug'),
-    ('crab', 'lobster'),
-
-    # Countries (10)
-    ('Mexico', 'Guatemala'),
-    ('Sweden', 'Norway'),
-    ('Poland', 'Hungary'),
-    ('Denmark', 'Finland'),
-    ('Ireland', 'Iceland'),
-    ('Saudi Arabia', 'Kuwait'),
-    ('Israel', 'Jordan'),
-    ('Peru', 'Colombia'),
-    ('Chile', 'Bolivia'),
-    ('Turkey', 'Greece'),
-
-    # Sports (10)
-    ('handball', 'water polo'),
-    ('rock climbing', 'bouldering'),
-    ('surfing', 'bodyboarding'),
-    ('futsal', 'indoor soccer'),
-    ('kickboxing', 'Muay Thai'),
-    ('darts', 'bowling'),
-    ('lacrosse', 'field hockey'),
-    ('roller hockey', 'inline skating'),
-    ('canoeing', 'rafting'),
-    ('paragliding', 'skydiving'),
-
-    # Musical Instruments (10)
-    ('electric guitar', 'bass guitar'),
-    ('violin', 'viola'),
-    ('sitar', 'tabla'),
-    ('melodica', 'harmonium'),
-    ('djembe', 'frame drum'),
-    ('bagpipes', 'bugle'),
-    ('maracas', 'castanets'),
-    ('fiddle', 'banjo'),
-    ('pan flute', 'ocarina'),
-    ('vibraphone', 'gong'),
-
-    # Clothing (10)
-    ('polo shirt', 'cargo pants'),
-    ('raincoat', 'windbreaker'),
-    ('tracksuit', 'sweatpants'),
-    ('blouse', 'skirt'),
-    ('t-shirt', 'jeans'),
-    ('sundress', 'flip-flops'),
-    ('swimsuit', 'cover-up'),
-    ('loafers', 'slippers'),
-    ('beanie', 'mittens'),
-    ('cap', 'shawl'),
-
-    # Professions (10)
-    ('barista', 'cashier'),
-    ('roofer', 'painter'),
-    ('driver', 'delivery person'),
-    ('receptionist', 'secretary'),
-    ('farmer', 'rancher'),
-    ('consultant', 'analyst'),
-    ('manager', 'supervisor'),
-    ('butcher', 'grocer'),
-    ('travel agent', 'tour guide'),
-    ('programmer', 'coder'),
-
-    # Technology (10)
-    ('smart speaker', 'voice assistant'),
-    ('WiFi router', 'network switch'),
-    ('external SSD', 'USB flash drive'),
-    ('mechanical keyboard', 'wireless mouse'),
-    ('VR headset', 'gaming controller'),
-    ('smart bulb', 'LED strip'),
-    ('security camera', 'doorbell camera'),
-    ('Bluetooth speaker', 'portable radio'),
-    ('desktop', 'all-in-one PC'),
-    ('streaming stick', 'media box'),
-
-    # Flowers (10)
-    ('lotus', 'gardenia'),
-    ('fuchsia', 'morning glory'),
-    ('larkspur', 'delphinium'),
-    ('coneflower', 'coreopsis'),
-    ('amaryllis', 'ranunculus'),
-    ('gladiolus', 'statice'),
-    ('honeysuckle', 'wisteria'),
-    ('geranium', 'impatiens'),
-    ('bachelor button', 'black-eyed susan'),
-    ('rudbeckia', 'echinacea'),
-
-    # Trees (10)
-    ('aspen', 'cottonwood'),
-    ('chinkapin', 'hickory'),
-    ('kapok', 'cacao tree'),
-    ('mulberry', 'fig tree'),
-    ('dogwood', 'hawthorn'),
-    ('locust', 'mesquite'),
-    ('ebony', 'rosewood'),
-    ('date palm', 'fan palm'),
-    ('lemon tree', 'orange tree'),
-    ('magnolia', 'mimosa'),
-
-    # Foods (5)
-    ('hot dog', 'pretzel'),
-    ('noodles', 'dumplings'),
-    ('taco', 'burrito'),
-    ('pie', 'ice cream'),
-    ('cookie', 'brownie'),
-
-    # Completely Mismatching Pairs (20 lines):
-    ('dog', 'calculator'),
-    ('orange', 'wrench'),
-    ('book', 'toaster'),
-    ('shoe', 'refrigerator'),
-    ('cup', 'radio'),
-    ('window', 'stapler'),
-    ('lamp', 'cucumber'),
-    ('clock', 'screwdriver'),
-    ('pillow', 'broom'),
-    ('guitar', 'mushroom'),
-    ('computer', 'cactus'),
-    ('pencil', 'whale'),
-    ('door', 'lollipop'),
-    ('sock', 'drill'),
-    ('glasses', 'tomato'),
-    ('keyboard', 'penguin'),
-    ('backpack', 'scissors'),
-    ('radio', 'fork'),
-    ('chair', 'cloud'),
-    ('bottle', 'kangaroo'),
-
-    # Not-So-Close Related Pairs (20 lines):
-    ('tea', 'evening'),
-    ('novel', 'shadow'),
-    ('wind', 'memory'),
-    ('storm', 'reflection'),
-    ('music', 'daydream'),
-    ('smile', 'breeze'),
-    ('fire', 'emotion'),
-    ('ocean', 'riddle'),
-    ('forest', 'reverie'),
-    ('mountain', 'solitude'),
-    ('river', 'rhyme'),
-    ('sky', 'thought'),
-    ('shadow', 'poetry'),
-    ('dusk', 'silhouette'),
-    ('dawn', 'imagination'),
-    ('glitter', 'fantasy'),
-    ('smoke', 'mirage'),
-    ('rainbow', 'murmur'),
-    ('petal', 'muse'),
-    ('star', 'whimsy'),
-
-    # ---------------------------
-    # Second Alternative List
-    # ---------------------------
-    # Same-Category Pairs (new words):
-
-    # Vehicles (15)
-    ('car', 'truck'),
-    ('van', 'bus'),
-    ('minivan', 'SUV'),
-    ('pickup', 'tractor'),
-    ('motorbike', 'moped'),
-    ('scooter', 'skateboard'),
-    ('bicycle', 'unicycle'),
-    ('paddle boat', 'sailboat'),
-    ('yacht', 'speedboat'),
-    ('glider', 'balloon'),
-    ('helicopter', 'plane'),
-    ('jet', 'biplane'),
-    ('tram', 'trolley'),
-    ('ferry', 'cable car'),
-    ('rickshaw', 'golf cart'),
-
-    # Beverages (15)
-    ('hot coffee', 'iced coffee'),
-    ('green tea', 'white tea'),
-    ('apple juice', 'cranberry juice'),
-    ('lemonade', 'limeade'),
-    ('soda', 'pop'),
-    ('milk', 'hot chocolate'),
-    ('vanilla latte', 'cinnamon latte'),
-    ('berry smoothie', 'tropical smoothie'),
-    ('cappuccino', 'flat white'),
-    ('iced herbal tea', 'iced fruit tea'),
-    ('sparkling water', 'seltzer water'),
-    ('fruit punch', 'lemon punch'),
-    ('cherry soda', 'grape soda'),
-    ('hot cider', 'mulled cider'),
-    ('power drink', 'refresher'),
-
-    # Fruits (15)
-    ('nectarine', 'persimmon'),
-    ('grapefruit', 'clementine'),
-    ('avocado', 'olive'),
-    ('elderberry', 'gooseberry'),
-    ('blackcurrant', 'redcurrant'),
-    ('banana', 'plantain'),
-    ('pawpaw', 'sapote'),
-    ('loquat', 'kumquat'),
-    ('prune', 'raisin'),
-    ('quince', 'medlar'),
-    ('mangosteen', 'rambutan'),
-    ('sugar apple', 'custard apple'),
-    ('white peach', 'yellow peach'),
-    ('blood orange', 'navel orange'),
-    ('red grape', 'green grape'),
-
-    # Colors (15)
-    ('cobalt', 'cerulean'),
-    ('sage', 'pistachio'),
-    ('bubblegum', 'candy floss'),
-    ('banana', 'grape'),
-    ('ocean', 'forest'),
-    ('smoke', 'ash'),
-    ('pearl', 'ivory'),
-    ('rust', 'sand'),
-    ('copper', 'brass'),
-    ('dusk', 'dawn'),
-    ('sky', 'cloud'),
-    ('berry', 'cocoa'),
-    ('flame', 'ember'),
-    ('mocha', 'latte'),
-    ('ice', 'frost'),
-
-    # Animals (15)
-    ('puppy', 'kitten'),
-    ('goldfish', 'guppy'),
-    ('iguana', 'chameleon'),
-    ('swan', 'duck'),
-    ('rooster', 'hen'),
-    ('ferret', 'weasel'),
-    ('hedgehog', 'porcupine'),
-    ('vulture', 'condor'),
-    ('stallion', 'mare'),
-    ('calf', 'foal'),
-    ('chicken', 'turkey'),
-    ('crow', 'raven'),
-    ('budgie', 'parakeet'),
-    ('snail', 'slug'),
-    ('crab', 'lobster'),
-
-    # Countries (10)
-    ('Mexico', 'Guatemala'),
-    ('Sweden', 'Norway'),
-    ('Poland', 'Hungary'),
-    ('Denmark', 'Finland'),
-    ('Ireland', 'Iceland'),
-    ('Saudi Arabia', 'Kuwait'),
-    ('Israel', 'Jordan'),
-    ('Peru', 'Colombia'),
-    ('Chile', 'Bolivia'),
-    ('Turkey', 'Greece'),
-
-    # Sports (10)
-    ('handball', 'water polo'),
-    ('rock climbing', 'bouldering'),
-    ('surfing', 'bodyboarding'),
-    ('futsal', 'indoor soccer'),
-    ('kickboxing', 'Muay Thai'),
-    ('darts', 'bowling'),
-    ('lacrosse', 'field hockey'),
-    ('roller hockey', 'inline skating'),
-    ('canoeing', 'rafting'),
-    ('paragliding', 'skydiving'),
-
-    # Musical Instruments (10)
-    ('electric guitar', 'bass guitar'),
-    ('violin', 'viola'),
-    ('sitar', 'tabla'),
-    ('melodica', 'harmonium'),
-    ('djembe', 'frame drum'),
-    ('bagpipes', 'bugle'),
-    ('maracas', 'castanets'),
-    ('fiddle', 'banjo'),
-    ('pan flute', 'ocarina'),
-    ('vibraphone', 'gong'),
-
-    # Clothing (10)
-    ('polo shirt', 'cargo pants'),
-    ('raincoat', 'windbreaker'),
-    ('tracksuit', 'sweatpants'),
-    ('blouse', 'skirt'),
-    ('t-shirt', 'jeans'),
-    ('sundress', 'flip-flops'),
-    ('swimsuit', 'cover-up'),
-    ('loafers', 'slippers'),
-    ('beanie', 'mittens'),
-    ('cap', 'shawl'),
-
-    # Professions (10)
-    ('barista', 'cashier'),
-    ('roofer', 'painter'),
-    ('driver', 'delivery person'),
-    ('receptionist', 'secretary'),
-    ('farmer', 'rancher'),
-    ('consultant', 'analyst'),
-    ('manager', 'supervisor'),
-    ('butcher', 'grocer'),
-    ('travel agent', 'tour guide'),
-    ('programmer', 'coder'),
-
-    # Technology (10)
-    ('smart speaker', 'voice assistant'),
-    ('WiFi router', 'network switch'),
-    ('external SSD', 'USB flash drive'),
-    ('mechanical keyboard', 'wireless mouse'),
-    ('VR headset', 'gaming controller'),
-    ('smart bulb', 'LED strip'),
-    ('security camera', 'doorbell camera'),
-    ('Bluetooth speaker', 'portable radio'),
-    ('desktop', 'all-in-one PC'),
-    ('streaming stick', 'media box'),
-
-    # Flowers (10)
-    ('lotus', 'gardenia'),
-    ('fuchsia', 'morning glory'),
-    ('larkspur', 'delphinium'),
-    ('coneflower', 'coreopsis'),
-    ('amaryllis', 'ranunculus'),
-    ('gladiolus', 'statice'),
-    ('honeysuckle', 'wisteria'),
-    ('geranium', 'impatiens'),
-    ('bachelor button', 'black-eyed susan'),
-    ('rudbeckia', 'echinacea'),
-
-    # Trees (10)
-    ('aspen', 'cottonwood'),
-    ('chinkapin', 'hickory'),
-    ('kapok', 'cacao tree'),
-    ('mulberry', 'fig tree'),
-    ('dogwood', 'hawthorn'),
-    ('locust', 'mesquite'),
-    ('ebony', 'rosewood'),
-    ('date palm', 'fan palm'),
-    ('lemon tree', 'orange tree'),
-    ('magnolia', 'mimosa'),
-
-    # Foods (5)
-    ('hot dog', 'pretzel'),
-    ('noodles', 'dumplings'),
-    ('taco', 'burrito'),
-    ('pie', 'ice cream'),
-    ('cookie', 'brownie'),
-
-    # Completely Mismatching Pairs (20 lines):
-    ('dog', 'calculator'),
-    ('orange', 'wrench'),
-    ('book', 'toaster'),
-    ('shoe', 'refrigerator'),
-    ('cup', 'radio'),
-    ('window', 'stapler'),
-    ('lamp', 'cucumber'),
-    ('clock', 'screwdriver'),
-    ('pillow', 'broom'),
-    ('guitar', 'mushroom'),
-    ('computer', 'cactus'),
-    ('pencil', 'whale'),
-    ('door', 'lollipop'),
-    ('sock', 'drill'),
-    ('glasses', 'tomato'),
-    ('keyboard', 'penguin'),
-    ('backpack', 'scissors'),
-    ('radio', 'fork'),
-    ('chair', 'cloud'),
-    ('bottle', 'kangaroo'),
-
-    # Not-So-Close Related Pairs (20 lines):
-    ('tea', 'evening'),
-    ('novel', 'shadow'),
-    ('wind', 'memory'),
-    ('storm', 'reflection'),
-    ('music', 'daydream'),
-    ('smile', 'breeze'),
-    ('fire', 'emotion'),
-    ('ocean', 'riddle'),
-    ('forest', 'reverie'),
-    ('mountain', 'solitude'),
-    ('river', 'rhyme'),
-    ('sky', 'thought'),
-    ('shadow', 'poetry'),
-    ('dusk', 'silhouette'),
-    ('dawn', 'imagination'),
-    ('glitter', 'fantasy'),
-    ('smoke', 'mirage'),
-    ('rainbow', 'murmur'),
-    ('petal', 'muse'),
-    ('star', 'whimsy'),
-]
 
 def generate_lobby_code(length=4):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
@@ -840,9 +169,11 @@ def handle_join_lobby():
     join_room(lobby_code)
     # When adding a new player, set initial points to 0.
     lobbies[lobby_code]['players'][sid] = {'nickname': nickname, 'alive': True, 'points': 0}
-    players_list = [{'nickname': player['nickname'], 'sid': s, 'points': player.get('points', 0)}
+    # Include 'alive' status when building players_list
+    players_list = [{'nickname': player['nickname'], 'sid': s, 'points': player.get('points', 0), 'alive': player.get('alive', True)}
                     for s, player in lobbies[lobby_code]['players'].items()]
     emit('update_players', {'players': players_list}, room=lobby_code)
+    # Also send settings to newly joined player
     emit('settings_updated', {'settings': lobbies[lobby_code]['settings']}, room=sid)
     if lobbies[lobby_code]['state'] in ['game', 'waiting_for_next_round'] and nickname in lobbies[lobby_code]['assignments']:
         assignment = lobbies[lobby_code]['assignments'][nickname]
@@ -856,7 +187,7 @@ def handle_disconnect():
         if sid in lobbies[lobby_code]['players']:
             print(f"Disconnecting player: {lobbies[lobby_code]['players'][sid]['nickname']}")
             del lobbies[lobby_code]['players'][sid]
-            players_list = [{'nickname': player['nickname'], 'sid': s, 'points': player.get('points', 0)}
+            players_list = [{'nickname': player['nickname'], 'sid': s, 'points': player.get('points', 0), 'alive': player.get('alive', True)}
                             for s, player in lobbies[lobby_code]['players'].items()]
             emit('update_players', {'players': players_list}, room=lobby_code)
 
@@ -877,7 +208,7 @@ def handle_kick_player(data):
         lobby['descriptions'].pop(target_nick, None)
         lobby['votes'].pop(target_nick, None)
         emit('kicked', {'message': 'You have been kicked from the lobby.'}, room=target_sid)
-        players_list = [{'nickname': player['nickname'], 'sid': s, 'points': player.get('points', 0)}
+        players_list = [{'nickname': player['nickname'], 'sid': s, 'points': player.get('points', 0), 'alive': player.get('alive', True)}
                         for s, player in lobby['players'].items()]
         emit('update_players', {'players': players_list}, room=lobby_code)
 
@@ -893,6 +224,12 @@ def handle_start_game():
     if len(players) < 3:
         emit('error', {'message': 'Need at least 3 players to start the game.'}, room=request.sid)
         return
+    
+    # Ensure word_pairs is loaded and not empty
+    if not word_pairs:
+        emit('error', {'message': 'Word list is empty. Cannot start game.'}, room=request.sid)
+        return
+
     lobby['state'] = 'game'
     random.shuffle(word_pairs)
     pair = word_pairs[0]
@@ -939,7 +276,15 @@ def handle_submit_description(data):
     else:
         descriptions_list = [{'nickname': nick, 'description': desc} for nick, desc in lobby['descriptions'].items()]
         random.shuffle(descriptions_list)
-        emit('all_descriptions', {'descriptions': descriptions_list}, room=lobby_code)
+        
+        # Prepare votable players list directly on the server
+        votable_players_list = []
+        for sid, player_data in lobby['players'].items():
+            if player_data['alive']:
+                votable_players_list.append({'nickname': player_data['nickname']})
+        random.shuffle(votable_players_list) # Randomize vote button order
+        
+        emit('all_descriptions', {'descriptions': descriptions_list, 'votable_players': votable_players_list}, room=lobby_code)
 
 @socketio.on('submit_vote')
 def handle_submit_vote(data):
@@ -966,12 +311,13 @@ def handle_submit_vote(data):
         max_votes = max(vote_count.values())
         candidates = [name for name, count in vote_count.items() if count == max_votes]
         eliminated_name = random.choice(candidates)
-        for sid, player in lobby['players'].items():
-            if player['nickname'] == eliminated_name:
-                lobby['players'][sid]['alive'] = False
-                break
+        
         eliminated_role = lobby['assignments'][eliminated_name]['role']
-        emit('player_eliminated', {'nickname': eliminated_name, 'role': eliminated_role}, room=lobby_code)
+        
+        # Find the actual spy's nickname for the reveal message
+        actual_spy_nickname = next((nick for nick, assign in lobby['assignments'].items() if assign['role'] == 'spy'), 'Unknown')
+        
+        emit('player_eliminated', {'nickname': eliminated_name, 'role': eliminated_role}, room=lobby_code) # Emit this first for animation
         
         alive_assignments = [lobby['assignments'][player['nickname']]
                              for sid, player in lobby['players'].items() if player['alive']]
@@ -979,89 +325,143 @@ def handle_submit_vote(data):
         normals = sum(1 for assign in alive_assignments if assign['role'] == 'normal')
         pair = lobby['current_word_pair']
         
+        # Data to send to client for outcome message
+        outcome_data = {
+            'eliminated_name': eliminated_name,
+            'eliminated_role': eliminated_role,
+            'spy_word': pair[1],
+            'normal_word': pair[0],
+            'actual_spy_nickname': actual_spy_nickname # Always send actual spy for full reveal if game ends
+        }
+
         if eliminated_role == 'spy':
             for sid, player in lobby['players'].items():
                 nick = player['nickname']
                 if lobby['assignments'].get(nick, {}).get('role') == 'normal':
                     player['points'] = player.get('points', 0) + 3
-            outcome_message = (f"{eliminated_name} was the spy! Round over: Normal team wins. "
-                               f"Spy word was '{pair[1]}' and Normal word was '{pair[0]}'. "
-                               "Press Next Round to continue.")
-            emit('round_over', {'message': outcome_message}, room=lobby_code)
+            emit('round_over', outcome_data, room=lobby_code) # Send structured data
             lobby['state'] = 'waiting_for_next_round'
-        elif spies >= normals:
+        elif spies >= normals: # Spy wins
             for sid, player in lobby['players'].items():
                 nick = player['nickname']
                 if lobby['assignments'].get(nick, {}).get('role') == 'spy':
                     player['points'] = player.get('points', 0) + len(lobby['players'])
-            outcome_message = (f"{eliminated_name} was not the spy! Round over: Spy wins. "
-                               f"Spy word was '{pair[1]}' and Normal word was '{pair[0]}'. "
-                               "Press Next Round to continue.")
-            emit('round_over', {'message': outcome_message}, room=lobby_code)
+            emit('round_over', outcome_data, room=lobby_code) # Send structured data
             lobby['state'] = 'waiting_for_next_round'
-        else:
-            outcome_message = f"{eliminated_name} was not the spy. Continue the round."
-            emit('vote_failed', {'message': outcome_message}, room=lobby_code)
-            # Reset description phase for all alive players.
-            alive_players = [player['nickname'] for sid, player in lobby['players'].items() if player['alive']]
-            random.shuffle(alive_players)
-            lobby['description_order'] = alive_players
+        else: # Game continues
+            # Update eliminated player's alive status in lobby state
+            for sid, player in lobby['players'].items():
+                if player['nickname'] == eliminated_name:
+                    lobby['players'][sid]['alive'] = False
+                    break
+
+            # Reset description phase for all *alive* players.
+            alive_players_nicks = [player['nickname'] for sid, player in lobby['players'].items() if player['alive']]
+            random.shuffle(alive_players_nicks)
+            lobby['description_order'] = alive_players_nicks
             lobby['current_descr_index'] = 0
-            lobby['descriptions'] = {}
-            lobby['votes'] = {}
-            emit('next_describer', {'describer': alive_players[0]}, room=lobby_code)
+            lobby['descriptions'] = {} # Clear descriptions for new round phase
+            lobby['votes'] = {} # Clear votes for new voting phase
+
+            emit('vote_failed', outcome_data, room=lobby_code) # Send structured data for "Search further!"
+            # Only emit next_describer if there are alive players left
+            if alive_players_nicks:
+                emit('next_describer', {'describer': alive_players_nicks[0]}, room=lobby_code)
+
+        # Always update player list after a vote, to show points/eliminated status
+        players_list = [{'nickname': p['nickname'], 'sid': s, 'points': p.get('points', 0), 'alive': p['alive']}
+                        for s, p in lobby['players'].items()]
+        emit('update_players', {'players': players_list}, room=lobby_code)
+
 
 @socketio.on('next_round')
 def handle_next_round():
     lobby_code = session.get('lobby')
     if not lobby_code or lobby_code not in lobbies:
-         return
+        return
     if session.get('role') != 'host':
-         return
+        return
+    
     lobby = lobbies[lobby_code]
+
+    # Check if the lobby is in the 'waiting_for_next_round' state before proceeding.
     if lobby.get('state') != 'waiting_for_next_round':
-         return
-    for sid, player in lobby['players'].items():
-         player['alive'] = True
+        return
+    
+    # Ensure word_pairs is loaded and not empty
+    if not word_pairs:
+        emit('error', {'message': 'Word list is empty. Cannot start next round.'}, room=request.sid)
+        return
+
+    # Reset player alive status and game data for the new round
+    for sid in lobby['players']:
+        lobby['players'][sid]['alive'] = True
     lobby['descriptions'] = {}
     lobby['votes'] = {}
-    alive_players = [player['nickname'] for sid, player in lobby['players'].items()]
+    lobby['assignments'] = {} # Clear previous assignments
+
+    # Choose a new random word pair
     random.shuffle(word_pairs)
     pair = word_pairs[0]
     lobby['current_word_pair'] = pair
-    new_spy_nick = random.choice(alive_players)
+    print("Chosen word pair for next round:", pair)
+
+    # Re-assign roles and words to all players
+    players_sids = list(lobby['players'].keys())
+    if not players_sids:
+        emit('error', {'message': 'No players left to start a new round. Returning to lobby.'}, room=request.sid)
+        lobby['state'] = 'lobby'
+        emit('game_ended_return_to_lobby', {}, room=lobby_code) # Custom event for client to handle
+        return
+
+    spy_sid = random.choice(players_sids)
+    spy_nickname = lobby['players'][spy_sid]['nickname']
+
     for sid, player in lobby['players'].items():
-         nick = player['nickname']
-         if nick == new_spy_nick:
-              lobby['assignments'][nick] = {'word': pair[1], 'role': 'spy'}
-         else:
-              lobby['assignments'][nick] = {'word': pair[0], 'role': 'normal'}
-    lobby['state'] = 'game'
-    for sid, player in lobby['players'].items():
-         nick = player['nickname']
-         emit('word_assignment', lobby['assignments'][nick], room=sid)
+        nick = player['nickname']
+        if nick == spy_nickname:
+            lobby['assignments'][nick] = {'word': pair[1], 'role': 'spy'}
+        else:
+            lobby['assignments'][nick] = {'word': pair[0], 'role': 'normal'}
+        emit('word_assignment', lobby['assignments'][nick], room=sid)
+
+    # Set up turn-based description order for the new round
     alive_players = [player['nickname'] for sid, player in lobby['players'].items() if player['alive']]
     random.shuffle(alive_players)
     lobby['description_order'] = alive_players
     lobby['current_descr_index'] = 0
-    emit('next_describer', {'describer': alive_players[0]}, room=lobby_code)
-    emit('new_round', {'message': 'New round started with new assignments.'}, room=lobby_code)
-    players_list = [{'nickname': player['nickname'], 'sid': s, 'points': player.get('points', 0)}
+
+    # Transition lobby state to 'game'
+    lobby['state'] = 'game'
+
+    # Notify clients about the new round and initial describer
+    emit('game_started', {'message': 'New round has started!'}, room=lobby_code) # Re-use game_started for new round
+    # Only emit next_describer if there are alive players left
+    if alive_players:
+        emit('next_describer', {'describer': alive_players[0]}, room=lobby_code)
+
+    # Update players list to reflect 'alive' status and points
+    players_list = [{'nickname': player['nickname'], 'sid': s, 'points': player.get('points', 0), 'alive': player.get('alive', True)}
                     for s, player in lobby['players'].items()]
     emit('update_players', {'players': players_list}, room=lobby_code)
+
 
 @socketio.on('update_settings')
 def handle_update_settings(data):
     lobby_code = session.get('lobby')
     if not lobby_code or lobby_code not in lobbies:
-         return
+        return
     lobby = lobbies[lobby_code]
     if session.get('role') != 'host':
-         return
-    for key in ['show_role', 'dead_vote', 'animations', 'sound']:
-         if key in data:
-              lobby['settings'][key] = data[key]
+        return
+    # Iterate through the provided data and update only existing settings keys
+    for key, value in data.items():
+        if key in lobby['settings']: # Ensure only predefined settings can be updated
+            lobby['settings'][key] = value
     emit('settings_updated', {'settings': lobby['settings']}, room=lobby_code)
+
+# Removed the handle_request_current_players event as it's no longer needed.
+# The votable players list is now sent directly with 'all_descriptions'.
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', debug=False, allow_unsafe_werkzeug=True)
