@@ -250,7 +250,7 @@
             from { transform: scale(0.8); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
-        
+
         /* Styles for Settings Section */
         .settings-section {
             margin-top: 20px;
@@ -271,7 +271,7 @@
         }
 
         .settings-section .theme-buttons-container button,
-        .settings-section .game-mode-setting label {
+        .settings-section .game-mode-settings {
             margin-right: 10px;
             margin-bottom: 5px;
             display: inline-block; /* For buttons and labels */
@@ -312,13 +312,55 @@
             transform: scale(1.2); /* Make checkbox slightly larger */
         }
 
+        /* Chat section styling */
+        #chat-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #1a1a1a;
+            border: 1px solid #c40000;
+            border-radius: 6px;
+            height: 200px;
+            overflow-y: auto;
+        }
+
+        #chat-messages {
+            margin-bottom: 10px;
+        }
+
+        #chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        #chat-input {
+            flex: 1;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #c40000;
+            background-color: #2a2a2a;
+            color: white;
+        }
+
+        #send-chat-btn {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #send-chat-btn:hover {
+            background-color: #0056b3;
+        }
+
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Spy Game - Playing</h1>
         <p>Lobby Code: <strong>{{ lobby_code }}</strong></p>
-        <p>Your Nickname: <strong>{{ nickname }}</p>
+        <p>Your Nickname: <strong>{{ nickname }}</strong></p>
 
         <div id="your-assignment" class="game-info-box">
             <h2>Your Role & Word:</h2>
@@ -358,6 +400,18 @@
             </div>
         </div> <!-- End of game-sections-wrapper -->
 
+        <!-- Chat Section -->
+        <div id="chat-container">
+            <h2>Chat</h2>
+            <div id="chat-messages">
+                <!-- Chat messages will appear here -->
+            </div>
+            <div id="chat-input-container">
+                <input type="text" id="chat-input" placeholder="Type a message...">
+                <button id="send-chat-btn">Send</button>
+            </div>
+        </div>
+
         <!-- Player list (for scores and alive/eliminated status) -->
         <div class="players-list">
             <h2>Players</h2>
@@ -369,7 +423,7 @@
         <!-- Settings Section -->
         <div class="settings-section">
             <h2>Settings</h2>
-            
+
             <div class="theme-buttons-container">
                 <h3>Themes</h3>
                 <button class="theme-button active" id="defaultTheme">Default</button>
@@ -452,6 +506,10 @@
         const settingAnimations = document.getElementById('setting-animations');
         const settingSound = document.getElementById('setting-sound');
 
+        // Chat elements
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendChatBtn = document.getElementById('send-chat-btn');
 
         let selectedVoteTarget = null; // Store the selected player for voting
 
@@ -479,7 +537,7 @@
                 submitDescriptionBtn.setAttribute('disabled', 'true');
                 document.getElementById('description-section').style.display = 'none'; // Hide description input
             }
-            
+
             document.getElementById('voting-section').style.display = 'none'; // Hide voting section
             // Ensure selectedVoteTarget and active vote styling are reset for new description phase
             if (selectedVoteTarget) {
@@ -540,7 +598,7 @@
             });
             currentDescriberHeader.innerText = "Time to vote!";
         });
-        
+
         socket.on('player_eliminated', function(data) {
             startEliminationAnimation();
         });
@@ -590,14 +648,13 @@
             });
         });
 
-
         // --- Player List & Chat ---
 
         socket.on('update_players', function(data) {
             console.log("update_players received:", data.players); 
             var container = document.getElementById('players-container');
             container.innerHTML = '';
-            
+
             data.players.forEach(function(player) {
                 var playerItem = document.createElement('div');
                 playerItem.className = 'player-item';
@@ -614,19 +671,16 @@
                     statusSpan.style.color = '#888';
                     playerItem.appendChild(statusSpan);
                 }
-                
+
                 container.appendChild(playerItem);
             });
         });
 
         socket.on('receive_chat', function (data) {
-            const chatBox = document.getElementById('chat-messages'); 
-            if (chatBox) { 
-                const messageEl = document.createElement('p');
-                messageEl.innerHTML = `<strong>${data.nickname}</strong> <small>(${data.timestamp})</small>: ${data.message}`;
-                chatBox.appendChild(messageEl);
-                chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
-            }
+            const messageEl = document.createElement('p');
+            messageEl.innerHTML = `<strong>${data.nickname}</strong> <small>(${data.timestamp})</small>: ${data.message}`;
+            chatMessages.appendChild(messageEl);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll
         });
 
         // --- Button Handlers ---
@@ -650,6 +704,20 @@
             }
         });
 
+        sendChatBtn.addEventListener('click', function() {
+            const message = chatInput.value.trim();
+            if (message) {
+                socket.emit('send_chat', { message: message });
+                chatInput.value = '';
+            }
+        });
+
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendChatBtn.click();
+            }
+        });
+
         if (isHost && nextRoundButton) {
             nextRoundButton.addEventListener('click', function() {
                 socket.emit('next_round');
@@ -661,7 +729,7 @@
                 closeAnimationButton.style.display = 'none'; // Hide close button for animation overlay
             });
         }
-        
+
         // --- Custom Modal Function (replaces alert/confirm) ---
         function showCustomModal(title, message, callback = null) {
             const existingModal = document.getElementById('custom-modal-overlay');
@@ -754,7 +822,7 @@
             function cycleEmoji() {
                 emojiCycler.innerText = emojis[currentEmojiIndex];
                 currentEmojiIndex = (currentEmojiIndex + 1) % emojis.length;
-                
+
                 timeElapsed += currentDelay;
 
                 if (timeElapsed < cyclingDuration) {
@@ -778,18 +846,14 @@
             revealText.style.opacity = 0; // Hide the text
             emojiCycler.innerText = ''; // Clear the emoji
             closeAnimationButton.style.display = 'none'; // Hide itself
-            
-            // If the vote failed, re-enable description input for next phase of current round
-            // This logic is duplicated from vote_failed, ensure it's safe to call here.
-            // A better approach might be to have a central function that 'resets' the game state for a new description phase.
-            // For now, this ensures the UI returns to the correct state after manual close.
+
+            // Re-enable description input for next phase of current round
             if (document.getElementById('voting-section').style.display === 'none') { // Check if we were in voting phase
                 descriptionInput.removeAttribute('disabled');
                 submitDescriptionBtn.removeAttribute('disabled');
                 document.getElementById('description-section').style.display = 'block';
             }
         });
-
 
         // --- Theme Switching ---
         document.getElementById('defaultTheme').addEventListener('click', function () {
