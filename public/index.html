@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Spy Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Main Menu Screen -->
+    <div id="screen-menu" class="screen active">
+      <h1 data-i18n="gameTitle">Spy Game</h1>
+      <div class="menu-buttons">
+        <button id="btn-create-game" class="btn btn-primary btn-large" data-i18n="createGame">Create Game</button>
+        <button id="btn-join-game" class="btn btn-secondary btn-large" data-i18n="joinGame">Join Game</button>
+      </div>
+      
+      <div id="join-form" class="form-container hidden">
+        <input type="text" id="join-code" class="input input-large" placeholder="ABC12" maxlength="6" pattern="[A-Za-z0-9]*">
+        <button id="btn-confirm-join" class="btn btn-primary btn-large" data-i18n="join">Join</button>
+        <button id="btn-cancel-join" class="btn btn-text" data-i18n="cancel">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Lobby Screen -->
+    <div id="screen-lobby" class="screen">
+      <div class="header">
+        <h2 data-i18n="lobby">Lobby</h2>
+        <div class="game-code-display">
+          <span id="lobby-code" class="code">ABC12</span>
+          <button id="btn-copy-code" class="btn btn-small" data-i18n="copyCode">Copy</button>
+        </div>
+      </div>
+      
+      <div class="players-list">
+        <h3 data-i18n="players">Players</h3>
+        <ul id="lobby-players"></ul>
+      </div>
+      
+      <div class="lobby-status">
+        <p id="lobby-message" data-i18n="waitingForPlayers">Waiting for players...</p>
+      </div>
+      
+      <button id="btn-start-game" class="btn btn-primary btn-large hidden" data-i18n="startGame">Start Game</button>
+      <button id="btn-leave-lobby" class="btn btn-text" data-i18n="leaveGame">Leave Game</button>
+    </div>
+
+    <!-- Role Reveal Screen -->
+    <div id="screen-reveal" class="screen">
+      <h2 data-i18n="yourRole">Your Role</h2>
+      <div id="role-card" class="role-card">
+        <div id="role-icon" class="role-icon"></div>
+        <h3 id="role-title"></h3>
+        <p id="role-description"></p>
+        <div id="role-word" class="role-word hidden">
+          <span data-i18n="locationIs">The location is:</span>
+          <strong id="secret-word"></strong>
+        </div>
+      </div>
+      <button id="btn-continue-reveal" class="btn btn-primary btn-large" data-i18n="continue">Continue</button>
+    </div>
+
+    <!-- Discussion/Chat Screen -->
+    <div id="screen-discussion" class="screen">
+      <div class="header">
+        <h2 data-i18n="discussion">Discussion</h2>
+        <div class="timer-display">
+          <span data-i18n="timeRemaining">Time Remaining</span>: 
+          <span id="timer" class="timer">5:00</span>
+        </div>
+      </div>
+      
+      <div id="chat-container" class="chat-container">
+        <div id="chat-messages" class="chat-messages"></div>
+        <div class="chat-input-area">
+          <input type="text" id="chat-input" class="input" data-i18n-placeholder="chatPlaceholder" placeholder="Type your message...">
+          <button id="btn-send-chat" class="btn btn-primary" data-i18n="send">Send</button>
+        </div>
+      </div>
+      
+      <button id="btn-call-vote" class="btn btn-warning btn-large" data-i18n="callVote">Call Vote</button>
+    </div>
+
+    <!-- Voting Screen -->
+    <div id="screen-voting" class="screen">
+      <h2 data-i18n="voting">Voting</h2>
+      <p data-i18n="voteFor">Vote for who you think is the spy</p>
+      
+      <div id="voting-players" class="players-grid">
+        <!-- Player buttons will be inserted here -->
+      </div>
+      
+      <p id="vote-status" data-i18n="waitingForVotes">Waiting for votes...</p>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="screen-results" class="screen">
+      <h2 id="results-title" data-i18n="results">Results</h2>
+      
+      <div id="results-content" class="results-content">
+        <div id="result-message" class="result-message"></div>
+        <div id="result-details" class="result-details"></div>
+        <div id="result-location" class="result-location hidden">
+          <span data-i18n="theLocationWas">The location was:</span>
+          <strong id="final-word"></strong>
+        </div>
+      </div>
+      
+      <button id="btn-play-again" class="btn btn-primary btn-large" data-i18n="playAgain">Play Again</button>
+      <button id="btn-back-menu" class="btn btn-text" data-i18n="backToMenu">Back to Menu</button>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="modal-error" class="modal hidden">
+      <div class="modal-content">
+        <h3 data-i18n="error">Error</h3>
+        <p id="error-message"></p>
+        <button id="btn-close-error" class="btn btn-primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
