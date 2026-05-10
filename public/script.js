@@ -18,7 +18,11 @@ const state = {
   word: null,
   players: [],
   gameState: 'menu', // menu, lobby, reveal, discussion, voting, results
-  hasVoted: false
+  hasVoted: false,
+  turnIndex: 0,
+  currentPlayerId: null,
+  totalRounds: 1,
+  currentRound: 0
 };
 
 // DOM Elements cache
@@ -77,10 +81,12 @@ function cacheElements() {
   
   elements.discussion = {
     timer: document.getElementById('timer'),
+    turnIndicator: document.getElementById('turn-indicator'),
     chatContainer: document.getElementById('chat-container'),
     messages: document.getElementById('chat-messages'),
     input: document.getElementById('chat-input'),
     sendBtn: document.getElementById('btn-send-chat'),
+    passTurnBtn: document.getElementById('btn-pass-turn'),
     voteBtn: document.getElementById('btn-call-vote')
   };
   
@@ -174,7 +180,12 @@ function connectSocket() {
   state.socket.on('timerStarted', handleTimerStarted);
   state.socket.on('timerUpdate', handleTimerUpdate);
   
+  // Turn events
+  state.socket.on('phaseChanged', handlePhaseChanged);
+  state.socket.on('turnPassed', handleTurnPassed);
+  
   // Chat events
+  state.socket.on('receiveMessage', handleChatMessage);
   state.socket.on('chatMessage', handleChatMessage);
   
   // Voting events
@@ -182,10 +193,14 @@ function connectSocket() {
   state.socket.on('voteResult', handleVoteResult);
   
   // Game end
+  state.socket.on('gameOver', handleGameEnd);
   state.socket.on('gameEnd', handleGameEnd);
   
-  // Errors
-  state.socket.on('error', handleError);
+  // Errors - define handleError function first
+  window.handleError = function(data) {
+    showError(data?.message || 'An error occurred');
+  };
+  state.socket.on('error', window.handleError);
 }
 
 /**
@@ -216,6 +231,13 @@ function setupEventListeners() {
   elements.discussion.input.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendChatMessage();
   });
+  
+  // Pass turn button
+  const passTurnBtn = document.getElementById('btn-pass-turn');
+  if (passTurnBtn) {
+    passTurnBtn.addEventListener('click', passTurn);
+  }
+  
   elements.discussion.voteBtn.addEventListener('click', callVote);
   
   // Results buttons
@@ -419,6 +441,10 @@ function handleGameStarted(data) {
 function handleRoleAssigned(data) {
   state.role = data.role;
   state.word = data.word;
+  state.players = Array.from({ length: data.totalPlayers }, (_, i) => ({ 
+    id: `player-${i}`, 
+    name: `Player ${i + 1}` 
+  }));
   
   // Update role card
   elements.reveal.card.className = `role-card ${data.role}`;
@@ -435,6 +461,112 @@ function handleRoleAssigned(data) {
   }
   
   showScreen('reveal');
+}
+
+/**
+ * Handle phase changed (discussion -> voting, etc)
+ */
+function handlePhaseChanged(data) {
+  if (data.phase === 'discussion') {
+    state.turnIndex = data.turnIndex || 0;
+    state.currentPlayerId = data.currentPlayerId;
+    state.currentRound = 0;
+    
+    updateTurnIndicator();
+    showScreen('discussion');
+    
+    if (data.message) {
+      addSystemMessage(data.message);
+    }
+  } else if (data.phase === 'voting') {
+    showVotingScreen();
+    
+    if (data.message) {
+      addSystemMessage(data.message);
+    }
+  }
+}
+
+/**
+ * Handle turn passed
+ */
+function handleTurnPassed(data) {
+  state.turnIndex = data.turnIndex;
+  state.currentPlayerId = data.currentPlayerId;
+  updateTurnIndicator();
+}
+
+/**
+ * Update turn indicator UI
+ */
+function updateTurnIndicator() {
+  const currentPlayer = state.players[state.turnIndex];
+  const isMyTurn = state.currentPlayerId === state.playerId;
+  
+  if (elements.discussion.turnIndicator) {
+    elements.discussion.turnIndicator.textContent = isMyTurn 
+      ? `${t('yourTurn')} - ${currentPlayer?.name || 'You'}`
+      : `${t('waitingFor')} ${currentPlayer?.name || '...'}`;
+    elements.discussion.turnIndicator.className = `turn-indicator ${isMyTurn ? 'my-turn' : ''}`;
+  }
+  
+  // Enable/disable chat input based on turn
+  if (elements.discussion.input) {
+    elements.discussion.input.disabled = !isMyTurn;
+    elements.discussion.sendBtn.disabled = !isMyTurn;
+  }
+  
+  // Show/hide pass turn button
+  if (elements.discussion.passTurnBtn) {
+    elements.discussion.passTurnBtn.style.display = isMyTurn ? 'inline-block' : 'none';
+  }
+}
+
+/**
+ * Show voting screen with continue/accuse options
+ */
+function showVotingScreen() {
+  state.hasVoted = false;
+  
+  const playersHtml = state.players
+    .filter(p => p.id !== state.playerId)
+    .map(player => `
+      <button class="vote-btn" data-player-id="${player.id}">
+        ${player.name}
+      </button>
+    `).join('');
+  
+  elements.voting.playersGrid.innerHTML = `
+    <div class="vote-options">
+      <button id="btn-vote-continue" class="vote-option-btn continue-btn">${t('continueDescribing')}</button>
+      <div class="accuse-section">
+        <p>${t('orAccuse')}:</p>
+        <div class="players-grid">${playersHtml}</div>
+      </div>
+    </div>
+  `;
+  
+  // Add click handlers
+  const continueBtn = document.getElementById('btn-vote-continue');
+  if (continueBtn) {
+    continueBtn.addEventListener('click', () => submitVote('continue'));
+  }
+  
+  document.querySelectorAll('.vote-btn').forEach(btn => {
+    btn.addEventListener('click', () => submitVote('accuse', btn.dataset.playerId));
+  });
+  
+  elements.voting.status.textContent = t('voteFor');
+  showScreen('voting');
+}
+
+/**
+ * Pass turn to next player
+ */
+function passTurn() {
+  if (state.currentPlayerId !== state.playerId) return;
+  
+  state.socket.emit('passTurn', { code: state.gameCode });
 }
 
 /**
@@ -473,7 +605,8 @@ function sendChatMessage() {
   
   state.socket.emit('chatMessage', {
     code: state.gameCode,
-    message
+    message,
+    senderId: state.playerId
   });
   
   elements.discussion.input.value = '';
@@ -484,10 +617,10 @@ function sendChatMessage() {
  */
 function handleChatMessage(data) {
   const messageEl = document.createElement('div');
-  messageEl.className = `chat-message ${data.playerId === state.playerId ? 'own' : ''}`;
+  messageEl.className = `chat-message ${data.id === state.playerId || data.playerId === state.playerId ? 'own' : ''}`;
   messageEl.innerHTML = `
-    <div class="player-name">${data.playerName}</div>
-    <div class="message-text">${escapeHtml(data.message)}</div>
+    <div class="player-name">${data.name || data.playerName}</div>
+    <div class="message-text">${escapeHtml(data.text || data.message)}</div>
   `;
   
   elements.discussion.messages.appendChild(messageEl);
@@ -542,23 +675,32 @@ function handleVotingStarted(data) {
 }
 
 /**
- * Submit vote
+ * Submit vote (continue or accuse)
  */
-function submitVote(targetId) {
+function submitVote(type, targetId) {
   if (state.hasVoted) return;
   
   state.socket.emit('vote', {
     code: state.gameCode,
+    type,
     targetId
   });
   
   state.hasVoted = true;
   
   // Update UI
-  document.querySelectorAll('.vote-btn').forEach(btn => {
-    btn.classList.toggle('voted', btn.dataset.playerId === targetId);
-    btn.disabled = true;
-  });
+  if (type === 'continue') {
+    const continueBtn = document.getElementById('btn-vote-continue');
+    if (continueBtn) {
+      continueBtn.classList.add('voted');
+      continueBtn.disabled = true;
+    }
+  } else {
+    document.querySelectorAll('.vote-btn').forEach(btn => {
+      btn.classList.toggle('voted', btn.dataset.playerId === targetId);
+      btn.disabled = true;
+    });
+  }
   
   elements.voting.status.textContent = t('waitingForVotes');
 }

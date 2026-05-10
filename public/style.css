@@ -360,19 +360,92 @@ h3 {
   gap: 0.5rem;
   padding: 1rem;
   border-top: 1px solid #eee;
+  flex-wrap: wrap;
 }
 
 .chat-input-area .input {
   margin-bottom: 0;
   flex: 1;
+  min-width: 200px;
+}
+
+/* Turn Indicator */
+.turn-indicator {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  padding: 1rem;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.1rem;
+  border-radius: 8px;
+  margin: 1rem;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  animation: pulse 2s infinite;
+}
+
+.turn-indicator.my-turn {
+  animation: none;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.6);
+  transform: scale(1.02);
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
 }
 
 /* Voting */
+.vote-options {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.accuse-section {
+  background: rgba(255, 255, 255, 0.5);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  border: 2px dashed var(--danger-color);
+}
+
+.accuse-section p {
+  margin: 0 0 1rem 0;
+  font-weight: bold;
+  color: var(--danger-color);
+  text-align: center;
+}
+
+.vote-option-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 1.5rem 2rem;
+  border-radius: var(--border-radius);
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  width: 100%;
+}
+
+.vote-option-btn.continue-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.vote-option-btn.voted {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .players-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 1rem;
-  margin: 2rem 0;
+  margin: 1rem 0 0 0;
 }
 
 .vote-btn {
@@ -387,13 +460,26 @@ h3 {
   box-shadow: var(--shadow);
 }
 
+.vote-btn:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-2px);
+}
+
 .vote-btn:active {
   transform: scale(0.95);
 }
 
 .vote-btn.voted {
-  background: var(--primary-color);
+  background: var(--danger-color);
   color: white;
+  border-color: var(--danger-color);
+}
+
+.vote-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 #vote-status {

@@ -2,18 +2,21 @@
 
 A complete responsive web app for the social deduction game "Spy" (Imposter). Players are assigned roles as either civilians (who know a secret location) or spies (who must blend in and guess the location).
 
-## Recent Updates
-- **Turn System**: Added strict turn order. Players must wait for their turn to describe the word.
-- **Visual Overhaul**: New dark theme with gradients, shadows, and animations.
-- **Chat Fix**: Resolved socket messaging issues; chat now works reliably in rooms.
-- **UI Improvements**: Added "Pass Turn" button and active player indicators.
+## Recent Updates (v2.0)
+- **Turn-Based System**: Strict turn order implemented. Player 1 describes first, then Player 2, etc. Only the active player can type and send messages.
+- **Enhanced Voting**: After all players describe, vote to either continue with another round OR accuse someone immediately.
+- **Chat Fixed**: Socket events properly namespaced; messages now broadcast correctly to game rooms.
+- **Modern UI Overhaul**: Dark theme with purple/teal gradients, animated turn indicators, styled message bubbles, and professional card designs.
+- **Visual Feedback**: Turn indicator banner shows whose turn it is, input disabled when not your turn, Pass Turn button visible only for active player.
 
 ## Features
 
 - **Real-time multiplayer** using Socket.IO
+- **Turn-based discussion** - players describe in order
+- **Dual voting system** - continue describing or accuse
 - **Responsive mobile-first design** with touch-friendly UI
 - **No login required** - join with short game codes (5 characters)
-- **Complete game flow**: lobby, role reveal, discussion/chat, voting, results
+- **Complete game flow**: lobby → role reveal → turn-based discussion → voting → results
 - **Localization support** (English, Spanish, French)
 - **Host management** with automatic transfer on disconnect
 - **Configurable timer** (default 5 minutes)
@@ -24,12 +27,12 @@ A complete responsive web app for the social deduction game "Spy" (Imposter). Pl
 ```
 /workspace
 ├── server/
-│   ├── index.js          # Node.js/Socket.IO server
+│   ├── index.js          # Node.js/Socket.IO server with turn logic
 │   └── package.json      # Dependencies
 ├── public/
-│   ├── index.html        # Main HTML UI
-│   ├── style.css         # Responsive CSS
-│   ├── script.js         # Client-side JavaScript
+│   ├── index.html        # Main HTML UI with turn indicator
+│   ├── style.css         # Modern responsive CSS with animations
+│   ├── script.js         # Client-side JavaScript (turn handling)
 │   └── words.json        # Localization dictionary
 └── README.md             # This file
 ```
