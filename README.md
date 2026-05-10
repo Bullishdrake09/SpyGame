@@ -2,6 +2,12 @@
 
 A complete responsive web app for the social deduction game "Spy" (Imposter). Players are assigned roles as either civilians (who know a secret location) or spies (who must blend in and guess the location).
 
+## Recent Updates
+- **Turn System**: Added strict turn order. Players must wait for their turn to describe the word.
+- **Visual Overhaul**: New dark theme with gradients, shadows, and animations.
+- **Chat Fix**: Resolved socket messaging issues; chat now works reliably in rooms.
+- **UI Improvements**: Added "Pass Turn" button and active player indicators.
+
 ## Features
 
 - **Real-time multiplayer** using Socket.IO
