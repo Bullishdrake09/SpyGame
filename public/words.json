@@ -25,7 +25,7 @@
     "send": "Send",
     "chatPlaceholder": "Type your message...",
     "voting": "Voting",
-    "voteFor": "Vote for who you think is the spy",
+    "voteFor": "Vote to continue or accuse someone",
     "yourVote": "Your vote:",
     "waitingForVotes": "Waiting for votes...",
     "results": "Results",
@@ -50,7 +50,12 @@
     "wrongSuspect": "Wrong suspect! Spy wins!",
     "error": "Error",
     "leaveGame": "Leave Game",
-    "timerExpired": "Time's up! Voting started."
+    "timerExpired": "Time's up! Voting started.",
+    "yourTurn": "Your Turn",
+    "waitingFor": "Waiting for",
+    "passTurn": "Pass Turn",
+    "continueDescribing": "Continue Describing (Another Round)",
+    "orAccuse": "OR ACCUSE:"
   },
   "es": {
     "gameTitle": "Juego del Espía",
