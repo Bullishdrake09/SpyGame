@@ -1,4 +1,7 @@
-```gitignore
+# Examples 1:
+(empty)
+
+# Example 2:
 # Compiled and build artifacts
 *.pyc
 __pycache__/
@@ -11,39 +14,18 @@ target/
 # Dependencies
 .venv/
 venv/
-node_modules/
-.julia/
-.zig-cache/
-deps/
+.env
+.env.local
+.env.*
 
 # Logs and temp files
 *.log
 *.tmp
 *.swp
-*.swo
-
-# Environment
-.env
-.env.local
-*.env.*
 
 # Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# System
-.DS_Store
-Thumbs.db
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
-# Cache
-.mypy_cache/
-.pytest_cache/
-.gradle/
-```
+# Original rules preserved
+*.log

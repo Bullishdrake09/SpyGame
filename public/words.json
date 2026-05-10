@@ -161,6 +161,11 @@
     "wrongSuspect": "Mauvais suspect! L'espion gagne!",
     "error": "Erreur",
     "leaveGame": "Quitter",
-    "timerExpired": "Temps écoulé! Vote commencé."
+    "timerExpired": "Temps écoulé! Vote commencé.",
+    "yourTurn": "Votre Tour",
+    "waitingFor": "En attente de",
+    "passTurn": "Passer le Tour",
+    "continueDescribing": "Continuer la Description (Un Autre Tour)",
+    "orAccuse": "OU ACCUSER:"
   }
 }
